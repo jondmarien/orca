@@ -13,9 +13,6 @@ export type ProcessTableRow = {
   command: string
 }
 
-/** How much older than its own await a TTL-cached capture may be. Renderer-safe. */
-export const PROCESS_TABLE_SNAPSHOT_MAX_STALENESS_MS = 500
-
 /** Columns used by the evidence reader. Keep command last so its spaces survive parsing. */
 const snapshotHostPlatform = typeof process !== 'undefined' ? process.platform : ''
 export const PS_ARGS = (

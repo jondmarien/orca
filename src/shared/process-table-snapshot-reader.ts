@@ -4,12 +4,12 @@ import { promisify } from 'node:util'
 import {
   PS_ARGS,
   PS_MAX_BUFFER_BYTES,
-  PROCESS_TABLE_SNAPSHOT_MAX_STALENESS_MS,
   ProcessTableCaptureError,
   parseProcessTableRows,
   parseStrictProcessTableRows,
   type ProcessTableRow
 } from './process-table-snapshot'
+import { PROCESS_TABLE_SNAPSHOT_MAX_STALENESS_MS } from './process-table-snapshot-ttl'
 
 export { PS_ARGS, PS_MAX_BUFFER_BYTES, PROCESS_TABLE_SNAPSHOT_MAX_STALENESS_MS }
 
