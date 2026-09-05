@@ -247,3 +247,14 @@ predicate. It is unobservable today — the host publishes neither field for a c
 all, so a mirror has nothing to take either way. If the capability-gated publish this section
 anticipates ever lands, narrow them the same way rather than by placement kind: a mirror should
 take a failure it cannot otherwise see, and only the hosting client should refuse it.
+
+## Plugin sidecar frames (`sidecar.clientHost.v1`)
+
+A host that implements the Orca-5 mailbox advertises `sidecar.clientHost.v1` and
+exposes `sidecar.clientHost.latest`. That is a **new RPC method plus a new
+capability string** — Rule 1 / “do not bump for new methods.” Old clients never
+call the method. The host must not invent a terminal-stream opcode for sidecar
+payloads (Rule 2). Publishing frames is opt-in per plugin (`sidecar` capability)
+and opt-in per client (the caller must advertise `sidecar.clientHost.v1` when it
+sends a capability list). See
+[plugin-sidecar-remote-presence.md](./plugin-sidecar-remote-presence.md).

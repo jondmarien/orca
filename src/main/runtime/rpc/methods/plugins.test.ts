@@ -71,4 +71,23 @@ describe('plugin panel serve RPC identity', () => {
       params: {}
     })
   })
+
+  it('forwards a UI focus report to the host plugin service', async () => {
+    const service = {
+      reportUiFocus: vi.fn()
+    } as unknown as PluginService
+    setPluginServiceForRpc(service)
+
+    await expect(
+      method('plugins.reportUiFocus').handler(
+        { windowFocused: true, kind: 'terminal', title: 'zsh' },
+        context()
+      )
+    ).resolves.toEqual({ ok: true })
+    expect(service.reportUiFocus).toHaveBeenCalledWith({
+      windowFocused: true,
+      kind: 'terminal',
+      title: 'zsh'
+    })
+  })
 })

@@ -109,6 +109,8 @@ docs/**
 !docs/reference/linux-glibc-compatibility.md
 !docs/reference/macos-press-and-hold.md
 !docs/reference/orcad-operations.md
+!docs/reference/plugin-panel-host-api.md
+!docs/reference/plugin-panel-storage.md
 !docs/reference/relay-grace-time-reconfiguration.md
 !docs/reference/windows-edr-posture.md
 !docs/reference/windows-process-enumeration.md
@@ -123,6 +125,11 @@ docs/**
 !docs/reference/wsl-command-execution.md
 !docs/reference/wsl-probe-failure-semantics.md
 !docs/reference/xterm-patch-regeneration.md
+!docs/reference/plugin-ui-focus.md
+!docs/reference/plugin-sidecar-remote-presence.md
+# Superpowers brainstorm/plan artifacts for the Orca-5 sidecar spike.
+!docs/superpowers/
+!docs/superpowers/**
 
 # Stably CLI (only docs/ are tracked)
 .stably/*
