@@ -37,6 +37,11 @@ export function pluginCapabilityDescription(kind: string, fallback: string): str
         'auto.components.settings.PluginConsentDialog.capability.settingsOwn',
         "Read and change the plugin's own settings"
       )
+    case 'ui:focus':
+      return translate(
+        'auto.components.settings.PluginConsentDialog.capability.uiFocus',
+        'Read the focused UI surface (kind and a truncated tab title). Off unless you grant this permission.'
+      )
     default:
       return fallback
   }

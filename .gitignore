@@ -125,6 +125,7 @@ docs/**
 !docs/reference/wsl-command-execution.md
 !docs/reference/wsl-probe-failure-semantics.md
 !docs/reference/xterm-patch-regeneration.md
+!docs/reference/plugin-ui-focus.md
 
 # Stably CLI (only docs/ are tracked)
 .stably/*

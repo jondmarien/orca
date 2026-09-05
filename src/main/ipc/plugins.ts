@@ -202,6 +202,10 @@ export function registerPluginHandlers(
     return pluginService.invokeCommand(parsed.pluginKey, parsed.commandId, parsed.args)
   })
 
+  ipcMain.on('plugins:reportUiFocus', (_event, args: unknown) => {
+    pluginService.reportUiFocus(args)
+  })
+
   ipcMain.handle('plugins:install', async (_event, args: unknown) => {
     await pluginService.whenReady()
     const parsed = parsePluginInstallArgs(args)

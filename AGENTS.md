@@ -65,6 +65,10 @@ All changes must consider folder workspaces as well as git worktrees. Don't assu
 
 Clients and remote Orca servers update independently, so mixed versions are the normal state. Before changing anything a paired client and host exchange — RPC params, stream frames, or the content either side publishes over them — follow [`docs/reference/remote-wire-compatibility.md`](./docs/reference/remote-wire-compatibility.md). A new optional field is safe; a new stream opcode must be capability-negotiated because decoders drop unknown opcodes silently; and changing what the host publishes reaches old clients even with no wire change.
 
+## Plugin UI focus
+
+Focused tab titles are identifying. Do not add focus fields or `ui.focus.changed` delivery without the `ui:focus` consent gate. Sample on the UI machine, project on the host, and keep titles basename/hostname + 80-byte truncated. See [`docs/reference/plugin-ui-focus.md`](./docs/reference/plugin-ui-focus.md).
+
 ## Git Binary Compatibility
 
 Orca runs the user's Git binary on native, WSL, and SSH hosts, which may all have different versions. Treat Git 2.25 as the core-workflow baseline and follow [`docs/reference/git-compatibility.md`](./docs/reference/git-compatibility.md).

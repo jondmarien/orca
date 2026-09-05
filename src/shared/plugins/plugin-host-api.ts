@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { pluginFocusedSurfaceSchema } from './plugin-focused-surface'
 import { PLUGIN_EVENT_NAMES } from './plugin-manifest'
 import type { PluginCapabilityKind } from './plugin-capabilities'
 
@@ -59,7 +60,9 @@ const workspaceReadContextResult = z
     /** Execution host of the focused worktree. Labels only — never hostname. */
     executionHost: pluginWorkspaceExecutionHostSchema.nullable().optional(),
     /** Agent type / model / Orca profile labels when the host already knows them. */
-    agent: pluginWorkspaceAgentContextSchema.nullable().optional()
+    agent: pluginWorkspaceAgentContextSchema.nullable().optional(),
+    /** Present only for plugins that declared `ui:focus`. Null when unknown. */
+    focusedSurface: pluginFocusedSurfaceSchema.nullable().optional()
   })
   .strict()
   .nullable()

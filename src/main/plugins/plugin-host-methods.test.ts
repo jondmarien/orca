@@ -38,7 +38,8 @@ function createServices(storageSet: PluginHostServices['storage']['set']): Plugi
       getAll: vi.fn().mockReturnValue({}),
       set: vi.fn().mockReturnValue({ ok: true })
     },
-    subscribeEvents: vi.fn().mockReturnValue([])
+    subscribeEvents: vi.fn().mockReturnValue([]),
+    readFocusedSurface: vi.fn().mockReturnValue(null)
   }
 }
 
@@ -330,6 +331,76 @@ describe('terminal.sendText explicit worktree routing', () => {
         agent: { type: 'codex', model: null, profile: 'Personal' }
       }
     })
+  })
+
+  it('omits focusedSurface from readContext unless ui:focus is granted', async () => {
+    const { services } = createTerminalHarness(['terminal:local:one'])
+    services.readFocusedSurface = vi.fn().mockReturnValue({
+      kind: 'terminal',
+      title: 'zsh'
+    })
+
+    const withoutFocus = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'workspace.readContext',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['workspace:read'],
+      services
+    })
+    expect(withoutFocus).toEqual({
+      ok: true,
+      value: {
+        branch: 'main',
+        displayName: 'Repo',
+        terminals: [{ id: 'terminal:local:one' }]
+      }
+    })
+
+    const withFocus = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'workspace.readContext',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['workspace:read', 'ui:focus'],
+      services
+    })
+    expect(withFocus).toEqual({
+      ok: true,
+      value: {
+        branch: 'main',
+        displayName: 'Repo',
+        terminals: [{ id: 'terminal:local:one' }],
+        focusedSurface: { kind: 'terminal', title: 'zsh' }
+      }
+    })
+  })
+
+  it('drops ui.focus.changed subscriptions without the ui:focus capability', async () => {
+    const subscribeEvents = vi.fn((_: string, events: string[]) => events)
+    const services = createServices(vi.fn().mockReturnValue({ ok: true }))
+    services.subscribeEvents = subscribeEvents
+
+    const denied = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'events.subscribe',
+      params: { events: ['ui.focus.changed', 'worktree.created'] },
+      viaPanel: false,
+      grantedCapabilities: ['events:subscribe'],
+      services
+    })
+    expect(denied).toEqual({ ok: true, value: { subscribed: ['worktree.created'] } })
+    expect(subscribeEvents).toHaveBeenCalledWith('orca-samples.demo', ['worktree.created'])
+
+    const allowed = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'events.subscribe',
+      params: { events: ['ui.focus.changed'] },
+      viaPanel: false,
+      grantedCapabilities: ['events:subscribe', 'ui:focus'],
+      services
+    })
+    expect(allowed).toEqual({ ok: true, value: { subscribed: ['ui.focus.changed'] } })
   })
 })
 

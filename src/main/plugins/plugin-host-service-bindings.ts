@@ -1,4 +1,5 @@
 import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
+import type { PluginFocusedSurface } from '../../shared/plugins/plugin-focused-surface'
 import {
   PLUGIN_WORKSPACE_TERMINAL_LIMIT,
   type PluginWorkspaceAgentContext,
@@ -59,6 +60,7 @@ export function bindPluginHostServices(input: {
   pluginsDataDir: string
   subscribeEvents: (pluginKey: string, events: PluginEventName[]) => PluginEventName[]
   readContextSources?: PluginWorkspaceReadContextSources
+  readFocusedSurface?: () => PluginFocusedSurface | null
 }): PluginHostServices {
   const { delegate, pluginsDataDir, subscribeEvents, readContextSources } = input
   return {
@@ -135,6 +137,7 @@ export function bindPluginHostServices(input: {
       set: (key, itemKey, value) =>
         new PluginKvStore(pluginsDataDir, key, 'settings.json').set(itemKey, value)
     },
-    subscribeEvents
+    subscribeEvents,
+    readFocusedSurface: input.readFocusedSurface ?? (() => null)
   }
 }

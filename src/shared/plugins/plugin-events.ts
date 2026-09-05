@@ -1,12 +1,14 @@
 import { z } from 'zod'
+import { pluginUiFocusChangedPayloadSchema } from './plugin-focused-surface'
 import type { PluginEventName } from './plugin-manifest'
 import { pluginWorkspaceAgentContextSchema } from './plugin-host-api'
 
 /**
  * Payload contracts for the v0 plugin event set (worktree lifecycle + agent
- * status only). Payloads are bounded projections — never raw runtime
- * objects — so nothing sensitive (absolute repo paths beyond the worktree's
- * own, remotes, credentials) can leak through the event stream.
+ * status + optional UI focus). Payloads are bounded projections — never raw
+ * runtime objects — so nothing sensitive (absolute repo paths beyond the
+ * worktree's own, remotes, credentials, full tab paths) can leak through
+ * the event stream.
  */
 
 export const worktreeCreatedPayloadSchema = z.object({
@@ -37,9 +39,11 @@ export const agentStatusChangedPayloadSchema = z.object({
 export const PLUGIN_EVENT_PAYLOAD_SCHEMAS: Record<PluginEventName, z.ZodTypeAny> = {
   'worktree.created': worktreeCreatedPayloadSchema,
   'worktree.removed': worktreeRemovedPayloadSchema,
-  'agent.status.changed': agentStatusChangedPayloadSchema
+  'agent.status.changed': agentStatusChangedPayloadSchema,
+  'ui.focus.changed': pluginUiFocusChangedPayloadSchema
 }
 
 export type PluginWorktreeCreatedPayload = z.infer<typeof worktreeCreatedPayloadSchema>
 export type PluginWorktreeRemovedPayload = z.infer<typeof worktreeRemovedPayloadSchema>
 export type PluginAgentStatusChangedPayload = z.infer<typeof agentStatusChangedPayloadSchema>
+export type { PluginUiFocusChangedPayload } from './plugin-focused-surface'

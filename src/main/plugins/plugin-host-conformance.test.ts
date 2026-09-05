@@ -53,7 +53,8 @@ function createServices(): PluginHostServices {
       getAll: vi.fn().mockReturnValue({ theme: 'dark' }),
       set: vi.fn().mockReturnValue({ ok: true })
     },
-    subscribeEvents: vi.fn().mockImplementation((_pluginKey, events) => events)
+    subscribeEvents: vi.fn().mockImplementation((_pluginKey, events) => events),
+    readFocusedSurface: vi.fn().mockReturnValue(null)
   }
 }
 
@@ -187,6 +188,27 @@ describe('plugin host main/relay conformance', () => {
       })
       expect(outcome).not.toHaveProperty('value.path')
       expect(outcome).not.toHaveProperty('value.worktreeId')
+      expect(outcome).not.toHaveProperty('value.focusedSurface')
+    }
+  })
+
+  it('includes focusedSurface on readContext only when ui:focus is granted', async () => {
+    const services = createServices()
+    services.readFocusedSurface = vi.fn().mockReturnValue({ kind: 'editor', title: 'app.ts' })
+    const resolvePolicy = vi
+      .fn()
+      .mockResolvedValue(createPolicy(['workspace:read', 'ui:focus'], services))
+    for (const adapter of Object.values(createAdapters(resolvePolicy))) {
+      const outcome = await adapter({ method: 'workspace.readContext', params: {} }, true)
+      expect(outcome).toEqual({
+        ok: true,
+        value: {
+          branch: 'main',
+          displayName: 'Orca',
+          terminals: [{ id: TERMINAL_ID }],
+          focusedSurface: { kind: 'editor', title: 'app.ts' }
+        }
+      })
     }
   })
 

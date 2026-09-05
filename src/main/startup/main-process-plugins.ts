@@ -153,7 +153,8 @@ export async function initializeMainProcessPlugins(runtime: OrcaRuntimeService):
   requestBundledPluginBootstrap()
   requestOfficialMarketplaceSeed()
   // v0 plugin event seams: agent status (hook pipeline tap) + worktree
-  // lifecycle (runtime tap). Server-side filtered per plugin subscription.
+  // lifecycle (runtime tap) + UI focus (renderer/RPC + window-blur tap).
+  // Server-side filtered per plugin subscription.
   agentHookServer.subscribeEnrichedStatus((enriched) => {
     // Why: plugins may automate on `working`; restored rows are historical claims, not fresh activity.
     if (enriched.restoredUnconfirmed) {
@@ -173,4 +174,11 @@ export async function initializeMainProcessPlugins(runtime: OrcaRuntimeService):
     })
   })
   runtime.onWorktreeLifecycle(emitPluginWorktreeLifecycle)
+  const clearPluginUiFocusWhenAppBlurs = (): void => {
+    if (BrowserWindow.getFocusedWindow()) {
+      return
+    }
+    state.pluginService?.reportUiFocus({ windowFocused: false })
+  }
+  app.on('browser-window-blur', clearPluginUiFocusWhenAppBlurs)
 }
