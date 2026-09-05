@@ -83,6 +83,10 @@ When adding or changing a Git command:
 - Prefer `rg` over the checked-out files for source searches. For history or refs, use a named ref, an explicit namespace/path, `--max-count`, and a bounded output; do not use an unqualified `--all` scan as a first diagnostic.
 - Keep repository-wide commands targeted to the current repository and worktree. If an unbounded scan is genuinely required, measure the ref count first, explain the cost, and get confirmation before running it.
 
+## Plugin Panel Host API
+
+Panel iframes are opaque-origin (`sandbox="allow-scripts"`). Do not invent a parallel host path: flip `panel` on `PLUGIN_HOST_API_V0`, keep identity session-bound, and charge every action to the per-plugin message budget. Settings get/set are plugin-private; storage/secrets stay worker-only until a dedicated change. See [`docs/reference/plugin-panel-host-api.md`](./docs/reference/plugin-panel-host-api.md).
+
 ## Git Provider Compatibility
 
 Source-control and review changes must consider GitLab and other supported git providers, not only GitHub. Keep provider-specific behavior behind explicit checks, and avoid GitHub-only naming for generic review concepts.

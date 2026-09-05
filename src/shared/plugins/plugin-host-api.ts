@@ -226,7 +226,8 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     scope: 'plugin-private',
     capability: 'settings:own',
     mutation: false,
-    panel: false,
+    // Why: panels need a settings screen; identity is session-bound, never caller-supplied.
+    panel: true,
     params: settingsGetParams,
     result: settingsGetResult
   }),
@@ -236,7 +237,7 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     scope: 'plugin-private',
     capability: 'settings:own',
     mutation: true,
-    panel: false,
+    panel: true,
     params: settingsSetParams,
     result: settingsSetResult
   }),

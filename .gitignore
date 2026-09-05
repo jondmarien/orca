@@ -109,6 +109,7 @@ docs/**
 !docs/reference/linux-glibc-compatibility.md
 !docs/reference/macos-press-and-hold.md
 !docs/reference/orcad-operations.md
+!docs/reference/plugin-panel-host-api.md
 !docs/reference/relay-grace-time-reconfiguration.md
 !docs/reference/windows-edr-posture.md
 !docs/reference/windows-process-enumeration.md

@@ -1,10 +1,20 @@
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
 import { bindPluginHostServices, type PluginRuntimeDelegate } from './plugin-host-service-bindings'
 import { executePluginHostCall, type PluginHostServices } from './plugin-host-methods'
 import { AgentSessionPtyWriteRefusedError } from '../../shared/agent-session-pty-write-admission'
+import { PluginKvStore } from './plugin-storage-store'
+
+const settingsRoots: string[] = []
+
+afterEach(async () => {
+  await Promise.all(
+    settingsRoots.splice(0).map((root) => rm(root, { recursive: true, force: true }))
+  )
+})
 
 function createServices(storageSet: PluginHostServices['storage']['set']): PluginHostServices {
   return {
@@ -262,5 +272,59 @@ describe('terminal.sendText under a refusing agent-session lease', () => {
 
     expect(outcome).toEqual({ ok: true, value: { accepted: true } })
     expect(delegate.sendTerminal).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('settings.get/set via panel', () => {
+  it('reads and writes only the bound plugin settings file', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-plugin-host-settings-'))
+    settingsRoots.push(root)
+    const services = createServices(vi.fn())
+    services.settings = {
+      getAll: (pluginId) => new PluginKvStore(root, pluginId, 'settings.json').getAll(),
+      set: (pluginId, key, value) =>
+        new PluginKvStore(root, pluginId, 'settings.json').set(key, value)
+    }
+    new PluginKvStore(root, 'orca-samples.other', 'settings.json').set('secret', 'nope')
+
+    const setOutcome = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'settings.set',
+      params: { key: 'theme', value: 'dark' },
+      viaPanel: true,
+      grantedCapabilities: ['settings:own'],
+      services,
+      audit: { record: vi.fn().mockResolvedValue(undefined) }
+    })
+    const getOutcome = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'settings.get',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['settings:own'],
+      services
+    })
+
+    expect(setOutcome).toEqual({ ok: true, value: { ok: true } })
+    expect(getOutcome).toEqual({ ok: true, value: { settings: { theme: 'dark' } } })
+    expect(new PluginKvStore(root, 'orca-samples.demo', 'settings.json').getAll()).toEqual({
+      theme: 'dark'
+    })
+    expect(new PluginKvStore(root, 'orca-samples.other', 'settings.json').getAll()).toEqual({
+      secret: 'nope'
+    })
+  })
+
+  it('denies panel settings without settings:own', async () => {
+    const outcome = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'settings.get',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['storage'],
+      services: createServices(vi.fn())
+    })
+
+    expect(outcome).toMatchObject({ ok: false, code: 'capability_denied' })
   })
 })

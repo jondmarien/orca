@@ -9,7 +9,8 @@ import { isPluginPanelAction } from './plugin-host-api'
  * every payload here; main re-checks capabilities before executing.
  *
  * Param/result schemas come from the host API v0 spec table — the panel
- * bridge is a transport, not a second contract.
+ * bridge is a transport, not a second contract. Settings get/set are
+ * panel-callable and plugin-private; storage/secrets/events stay worker-only.
  */
 
 export const PANEL_ACTION_REQUEST_TYPE = 'orca-panel-action'

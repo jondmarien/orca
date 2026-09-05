@@ -143,6 +143,36 @@ describe('plugin host main/relay conformance', () => {
     }
   })
 
+  it('scopes panel settings.get/set to the bound plugin on main and relay', async () => {
+    const otherGetAll = vi.fn().mockReturnValue({ secret: 'nope' })
+    const otherSet = vi.fn().mockReturnValue({ ok: true as const })
+    for (const adapterName of ['desktop-main', 'relay']) {
+      const services = createServices()
+      const resolvePolicy = vi.fn().mockImplementation((pluginKey: string) => {
+        if (pluginKey !== PLUGIN_KEY) {
+          return createPolicy(['settings:own'], {
+            ...services,
+            settings: { getAll: otherGetAll, set: otherSet }
+          })
+        }
+        return createPolicy(['settings:own'], services)
+      })
+      const adapter = createAdapters(resolvePolicy)[adapterName]!
+
+      await expect(
+        adapter({ method: 'settings.set', params: { key: 'theme', value: 'dark' } }, true)
+      ).resolves.toEqual({ ok: true, value: { ok: true } })
+      await expect(adapter({ method: 'settings.get', params: {} }, true)).resolves.toEqual({
+        ok: true,
+        value: { settings: { theme: 'dark' } }
+      })
+      expect(services.settings.set).toHaveBeenCalledWith(PLUGIN_KEY, 'theme', 'dark')
+      expect(services.settings.getAll).toHaveBeenCalledWith(PLUGIN_KEY)
+      expect(otherGetAll).not.toHaveBeenCalled()
+      expect(otherSet).not.toHaveBeenCalled()
+    }
+  })
+
   it('projects workspace context without host paths on main and relay', async () => {
     const resolvePolicy = vi.fn().mockResolvedValue(createPolicy(['workspace:read']))
     for (const adapter of Object.values(createAdapters(resolvePolicy))) {
