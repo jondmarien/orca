@@ -14,8 +14,9 @@ export type ProcessTableRow = {
 }
 
 /** Columns used by the evidence reader. Keep command last so its spaces survive parsing. */
+const snapshotHostPlatform = typeof process !== 'undefined' ? process.platform : ''
 export const PS_ARGS = (
-  process.platform === 'darwin'
+  snapshotHostPlatform === 'darwin'
     ? ['-axo', 'pid=,ppid=,pgid=,tpgid=,stat=,tty=,lstart=,command=']
     : ['-axo', 'pid=,ppid=,pgid=,tpgid=,stat=,tty=,etimes=,command=']
 ) as readonly string[]
