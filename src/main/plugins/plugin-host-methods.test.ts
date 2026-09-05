@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
 import { getLocalExecutionHostLabel } from '../../shared/execution-host'
+import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
 import { bindPluginHostServices, type PluginRuntimeDelegate } from './plugin-host-service-bindings'
 import { executePluginHostCall, type PluginHostServices } from './plugin-host-methods'
 import { AgentSessionPtyWriteRefusedError } from '../../shared/agent-session-pty-write-admission'
@@ -377,7 +378,7 @@ describe('terminal.sendText explicit worktree routing', () => {
   })
 
   it('drops ui.focus.changed subscriptions without the ui:focus capability', async () => {
-    const subscribeEvents = vi.fn((_: string, events: string[]) => events)
+    const subscribeEvents = vi.fn((_: string, events: PluginEventName[]) => events)
     const services = createServices(vi.fn().mockReturnValue({ ok: true }))
     services.subscribeEvents = subscribeEvents
 

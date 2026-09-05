@@ -58,10 +58,6 @@ function kindFromVisibleTabType(
       return 'browser'
     case 'simulator':
       return 'simulator'
-    default: {
-      const _exhaustive: never = type
-      return _exhaustive
-    }
   }
 }
 

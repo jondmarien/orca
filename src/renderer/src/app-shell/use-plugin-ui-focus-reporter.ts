@@ -19,16 +19,13 @@ export function usePluginUiFocusReporter(): void {
   const unifiedTabsByWorktree = useAppStore((state) => state.unifiedTabsByWorktree)
   const groupsByWorktree = useAppStore((state) => state.groupsByWorktree)
   const activeGroupIdByWorktree = useAppStore((state) => state.activeGroupIdByWorktree)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const windowFocusedRef = useRef(typeof document === 'undefined' ? true : document.hasFocus())
 
   useEffect(() => {
+    let timer = 0
     const flush = (windowFocused: boolean): void => {
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current)
-      }
-      timerRef.current = setTimeout(() => {
-        timerRef.current = null
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
         publishPluginUiFocus(
           derivePluginUiFocusReport({
             windowFocused,
@@ -57,9 +54,7 @@ export function usePluginUiFocusReporter(): void {
     return () => {
       window.removeEventListener('focus', onFocus)
       window.removeEventListener('blur', onBlur)
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current)
-      }
+      window.clearTimeout(timer)
     }
   }, [
     activeModal,
