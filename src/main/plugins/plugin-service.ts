@@ -26,6 +26,7 @@ import { PluginContentVerifier } from './plugin-content-integrity'
 import type { PluginRuntimeDelegate } from './plugin-host-service-bindings'
 import { PluginLogBuffer, type PluginLogLine } from './plugin-log-buffer'
 import { PluginPanelController } from './plugin-panel-controller'
+import { PluginSidecarMailbox } from './plugin-sidecar-mailbox'
 import { PluginWorkerController } from './plugin-worker-controller'
 import { PluginServiceHousekeeping } from './plugin-service-housekeeping'
 import { collectApprovedWorkerSpecs } from './plugin-worker-reconciliation'
@@ -58,6 +59,7 @@ export class PluginService {
   private readonly contentVerifier = new PluginContentVerifier()
   readonly contentPacks: PluginContentPackRegistry
   readonly panels: PluginPanelController
+  readonly sidecarMailbox = new PluginSidecarMailbox()
   private readonly changeListeners = new Set<(event: PluginChangeEvent) => void>()
   private readonly housekeeping = new PluginServiceHousekeeping()
   private discovered: DiscoveredPlugin[] = []
@@ -295,6 +297,7 @@ export class PluginService {
       logBuffer: this.logBuffer,
       runtimeDelegate: this.runtimeDelegate,
       uiFocus: this.uiFocus,
+      sidecarMailbox: this.sidecarMailbox,
       getGrantedCapabilities: (pluginKey) => this.getGrantedCapabilities(pluginKey),
       isRuntimeApproved: (plugin) => this.isRuntimeApproved(plugin)
     }

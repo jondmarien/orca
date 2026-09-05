@@ -20,7 +20,8 @@ export const PLUGIN_CAPABILITY_KINDS = [
   'secrets',
   'events:subscribe',
   'settings:own',
-  'ui:focus'
+  'ui:focus',
+  'sidecar'
 ] as const
 
 export type PluginCapabilityKind = (typeof PLUGIN_CAPABILITY_KINDS)[number]
@@ -44,7 +45,10 @@ export const PLUGIN_CAPABILITY_DESCRIPTIONS: Record<PluginCapabilityKind, string
     'Get notified when worktrees are created or removed and when agent status changes',
   'settings:own': "Read and change the plugin's own settings",
   'ui:focus':
-    'Read the focused UI surface (kind and a truncated tab title). Off unless you grant this permission.'
+    'Read the focused UI surface (kind and a truncated tab title). Off unless you grant this permission.',
+  sidecar:
+    'Publish sidecar frames (for example Discord presence) so a paired UI client ' +
+    'can apply them on the machine that has Discord'
 }
 
 /**

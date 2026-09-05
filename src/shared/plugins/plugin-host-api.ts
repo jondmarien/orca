@@ -2,6 +2,11 @@ import { z } from 'zod'
 import { pluginFocusedSurfaceSchema } from './plugin-focused-surface'
 import { PLUGIN_EVENT_NAMES } from './plugin-manifest'
 import type { PluginCapabilityKind } from './plugin-capabilities'
+import {
+  sidecarPlacementSchema,
+  sidecarPublishParamsSchema,
+  sidecarPublishResultSchema
+} from './plugin-sidecar-contract'
 
 /**
  * Host API v0 — the separately-versioned public facade plugins call. Every
@@ -128,7 +133,13 @@ export type PluginHostMethodSpec = {
   /** pluginApi minor the method appeared in (`1.0` for the v0 set). */
   since: string
   /** Machine-readable resource boundary enforced by the host binding. */
-  scope: 'active-worktree' | 'explicit-terminal' | 'plugin-private' | 'desktop' | 'host-events'
+  scope:
+    | 'active-worktree'
+    | 'explicit-terminal'
+    | 'plugin-private'
+    | 'desktop'
+    | 'host-events'
+    | 'sidecar'
   stability: 'experimental'
   capability: PluginCapabilityKind
   /** Mutations are audit-logged with actor `plugin:<id>`. */
@@ -279,6 +290,26 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     panel: false,
     params: eventsSubscribeParams,
     result: eventsSubscribeResult
+  }),
+  spec({
+    name: 'sidecar.resolvePlacement',
+    since: '1.1',
+    scope: 'sidecar',
+    capability: 'sidecar',
+    mutation: false,
+    panel: false,
+    params: z.object({}).strict().optional(),
+    result: sidecarPlacementSchema
+  }),
+  spec({
+    name: 'sidecar.publish',
+    since: '1.1',
+    scope: 'sidecar',
+    capability: 'sidecar',
+    mutation: true,
+    panel: false,
+    params: sidecarPublishParamsSchema,
+    result: sidecarPublishResultSchema
   })
 ]
 

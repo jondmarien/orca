@@ -147,6 +147,8 @@ function summarizeParams(method: string, params: unknown): string {
     case 'secrets.delete':
     case 'settings.set':
       return `key=${String(record.key)}`
+    case 'sidecar.publish':
+      return `channel=${String(record.channel)} op=${String(record.op)}`
     default:
       return ''
   }

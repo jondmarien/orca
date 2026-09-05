@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PLUGIN_HOST_API_V0 } from '../../shared/plugins/plugin-host-api'
+import { buildSidecarPlacement } from '../../shared/plugins/plugin-sidecar-contract'
 import type { PluginCapabilityKind } from '../../shared/plugins/plugin-capabilities'
 import {
   admitPluginPanelCall,
@@ -54,7 +55,15 @@ function createServices(): PluginHostServices {
       set: vi.fn().mockReturnValue({ ok: true })
     },
     subscribeEvents: vi.fn().mockImplementation((_pluginKey, events) => events),
-    readFocusedSurface: vi.fn().mockReturnValue(null)
+    readFocusedSurface: vi.fn().mockReturnValue(null),
+    sidecar: {
+      resolvePlacement: vi.fn().mockReturnValue(buildSidecarPlacement(null)),
+      publish: vi.fn().mockReturnValue({
+        accepted: true,
+        delivery: 'stored',
+        placement: buildSidecarPlacement(1)
+      })
+    }
   }
 }
 
@@ -118,12 +127,14 @@ const successParams: Record<string, unknown> = {
   'secrets.delete': { key: 'token' },
   'settings.get': {},
   'settings.set': { key: 'theme', value: 'dark' },
-  'events.subscribe': { events: ['worktree.created'] }
+  'events.subscribe': { events: ['worktree.created'] },
+  'sidecar.resolvePlacement': {},
+  'sidecar.publish': { channel: 'presence', op: 'set', payload: { details: 'Working in Orca' } }
 }
 
 describe('plugin host main/relay conformance', () => {
-  it('runs a granted success through both transports for all 13 v0 methods', async () => {
-    expect(PLUGIN_HOST_API_V0).toHaveLength(13)
+  it('runs a granted success through both transports for all 15 v0 methods', async () => {
+    expect(PLUGIN_HOST_API_V0).toHaveLength(15)
     expect(Object.keys(successParams).sort()).toEqual(
       PLUGIN_HOST_API_V0.map((entry) => entry.name).sort()
     )

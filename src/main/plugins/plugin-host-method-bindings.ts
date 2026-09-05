@@ -12,6 +12,11 @@ import type { PluginCapabilityKind } from '../../shared/plugins/plugin-capabilit
 import type { PluginFocusedSurface } from '../../shared/plugins/plugin-focused-surface'
 import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
 import { projectPluginAgentContext } from '../../shared/plugins/plugin-workspace-read-context'
+import type {
+  PluginSidecarPlacement,
+  PluginSidecarPublishParams,
+  PluginSidecarPublishResult
+} from '../../shared/plugins/plugin-sidecar-contract'
 
 export type PluginWorktreeContext = {
   worktreeId: string
@@ -55,6 +60,10 @@ export type PluginHostServices = {
   }
   subscribeEvents(pluginId: string, events: PluginEventName[]): PluginEventName[]
   readFocusedSurface(): PluginFocusedSurface | null
+  sidecar: {
+    resolvePlacement(pluginId: string): PluginSidecarPlacement
+    publish(pluginId: string, input: PluginSidecarPublishParams): PluginSidecarPublishResult
+  }
 }
 
 export type BoundPluginHostMethod = {
@@ -201,7 +210,13 @@ const HANDLERS = new Map<string, BoundPluginHostMethod>([
         : events.filter((event) => event !== 'ui.focus.changed')
       return { subscribed: services.subscribeEvents(pluginId, allowed) }
     }
-  )
+  ),
+  definePluginMethod('sidecar.resolvePlacement', async (_params, { pluginId, services }) => {
+    return services.sidecar.resolvePlacement(pluginId)
+  }),
+  definePluginMethod('sidecar.publish', async (params, { pluginId, services }) => {
+    return services.sidecar.publish(pluginId, params as PluginSidecarPublishParams)
+  })
 ])
 
 // Why: adding a facade schema without a binding must fail at module load,

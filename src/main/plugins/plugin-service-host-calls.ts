@@ -11,6 +11,7 @@ import type { PluginLogBuffer } from './plugin-log-buffer'
 import type { PluginWorkerController } from './plugin-worker-controller'
 import type { PluginCapabilityKind } from '../../shared/plugins/plugin-capabilities'
 import type { PluginUiFocusSnapshot } from './plugin-ui-focus'
+import type { PluginSidecarMailbox } from './plugin-sidecar-mailbox'
 
 export type PluginServiceHostCallContext = {
   userDataPath: string
@@ -23,6 +24,7 @@ export type PluginServiceHostCallContext = {
   logBuffer: PluginLogBuffer
   runtimeDelegate: PluginRuntimeDelegate | null
   uiFocus: PluginUiFocusSnapshot
+  sidecarMailbox: PluginSidecarMailbox
   getGrantedCapabilities: (pluginKey: string) => PluginCapabilityKind[] | null
   isRuntimeApproved: (plugin: ValidDiscoveredPlugin) => boolean
 }
@@ -45,7 +47,8 @@ export async function executePluginServiceHostCall(
             delegate: ctx.runtimeDelegate,
             pluginsDataDir: getPluginsDataDir(ctx.userDataPath),
             subscribeEvents: (key, events) => ctx.eventBus.subscribe(key, events),
-            readFocusedSurface: () => ctx.uiFocus.get()
+            readFocusedSurface: () => ctx.uiFocus.get(),
+            sidecarMailbox: ctx.sidecarMailbox
           })
         : null,
       audit: ctx.audit

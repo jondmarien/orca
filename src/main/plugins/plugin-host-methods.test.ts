@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
 import { getLocalExecutionHostLabel } from '../../shared/execution-host'
 import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
+import { buildSidecarPlacement } from '../../shared/plugins/plugin-sidecar-contract'
 import { bindPluginHostServices, type PluginRuntimeDelegate } from './plugin-host-service-bindings'
 import { executePluginHostCall, type PluginHostServices } from './plugin-host-methods'
 import { AgentSessionPtyWriteRefusedError } from '../../shared/agent-session-pty-write-admission'
 import { PluginKvStore } from './plugin-storage-store'
+import { PluginSidecarMailbox } from './plugin-sidecar-mailbox'
 
 const settingsRoots: string[] = []
 
@@ -17,6 +19,8 @@ afterEach(async () => {
     settingsRoots.splice(0).map((root) => rm(root, { recursive: true, force: true }))
   )
 })
+
+const emptySidecarPlacement = buildSidecarPlacement(null)
 
 function createServices(storageSet: PluginHostServices['storage']['set']): PluginHostServices {
   return {
@@ -40,7 +44,15 @@ function createServices(storageSet: PluginHostServices['storage']['set']): Plugi
       set: vi.fn().mockReturnValue({ ok: true })
     },
     subscribeEvents: vi.fn().mockReturnValue([]),
-    readFocusedSurface: vi.fn().mockReturnValue(null)
+    readFocusedSurface: vi.fn().mockReturnValue(null),
+    sidecar: {
+      resolvePlacement: vi.fn().mockReturnValue(emptySidecarPlacement),
+      publish: vi.fn().mockReturnValue({
+        accepted: true,
+        delivery: 'stored',
+        placement: emptySidecarPlacement
+      })
+    }
   }
 }
 
@@ -487,5 +499,78 @@ describe('settings.get/set via panel', () => {
     })
 
     expect(outcome).toMatchObject({ ok: false, code: 'capability_denied' })
+  })
+})
+
+describe('sidecar host methods', () => {
+  it('stores a presence frame and returns host-mediated placement', async () => {
+    const mailbox = new PluginSidecarMailbox()
+    const { services } = createTerminalHarness(['terminal:local:one'])
+    services.sidecar = {
+      resolvePlacement: (pluginId) => mailbox.resolvePlacement(pluginId),
+      publish: (pluginId, input) => mailbox.publish(pluginId, input)
+    }
+
+    const published = await executePluginHostCall({
+      pluginId: 'chron0.discord-presence',
+      method: 'sidecar.publish',
+      params: { channel: 'presence', op: 'set', payload: { details: 'Working in Orca' } },
+      viaPanel: false,
+      grantedCapabilities: ['sidecar'],
+      services,
+      audit: { record: vi.fn().mockResolvedValue(undefined) }
+    })
+
+    expect(published).toMatchObject({
+      ok: true,
+      value: {
+        accepted: true,
+        delivery: 'stored',
+        placement: {
+          pluginProcess: 'runtime-host',
+          discordIpcMustRun: 'machine-with-discord',
+          companionStillValid: true
+        }
+      }
+    })
+
+    const placement = await executePluginHostCall({
+      pluginId: 'chron0.discord-presence',
+      method: 'sidecar.resolvePlacement',
+      params: {},
+      viaPanel: false,
+      grantedCapabilities: ['sidecar'],
+      services
+    })
+    expect(placement).toMatchObject({
+      ok: true,
+      value: { mailboxAvailable: true, lastPublishedAt: expect.any(Number) }
+    })
+  })
+
+  it('denies sidecar.publish without the sidecar capability', async () => {
+    const outcome = await executePluginHostCall({
+      pluginId: 'chron0.discord-presence',
+      method: 'sidecar.publish',
+      params: { channel: 'presence', op: 'clear' },
+      viaPanel: false,
+      grantedCapabilities: ['storage'],
+      services: createServices(vi.fn()),
+      audit: { record: vi.fn().mockResolvedValue(undefined) }
+    })
+    expect(outcome).toMatchObject({ ok: false, code: 'capability_denied' })
+  })
+
+  it('forbids sidecar.publish from a sandboxed panel', async () => {
+    const outcome = await executePluginHostCall({
+      pluginId: 'chron0.discord-presence',
+      method: 'sidecar.publish',
+      params: { channel: 'presence', op: 'clear' },
+      viaPanel: true,
+      grantedCapabilities: ['sidecar'],
+      services: createServices(vi.fn()),
+      audit: { record: vi.fn().mockResolvedValue(undefined) }
+    })
+    expect(outcome).toMatchObject({ ok: false, code: 'panel_forbidden' })
   })
 })

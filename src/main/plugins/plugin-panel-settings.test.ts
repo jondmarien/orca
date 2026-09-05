@@ -71,7 +71,12 @@ function createServices(pluginsDataDir: string): PluginHostServices {
       set: (pluginId, key, value) =>
         new PluginKvStore(pluginsDataDir, pluginId, 'settings.json').set(key, value)
     },
-    subscribeEvents: vi.fn().mockReturnValue([])
+    subscribeEvents: vi.fn().mockReturnValue([]),
+    readFocusedSurface: vi.fn().mockReturnValue(null),
+    sidecar: {
+      resolvePlacement: vi.fn(),
+      publish: vi.fn()
+    }
   }
 }
 

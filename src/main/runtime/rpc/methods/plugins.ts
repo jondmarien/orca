@@ -39,6 +39,10 @@ export function setPluginServiceForRpc(
   pluginEnablementForRpc = writes?.applyEnablement ?? null
 }
 
+export function getPluginServiceForRpc(): PluginService | null {
+  return pluginServiceForRpc
+}
+
 function requirePluginService(): PluginService {
   if (!pluginServiceForRpc) {
     throw new Error('Plugin service is not available on this runtime')

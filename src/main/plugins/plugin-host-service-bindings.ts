@@ -13,6 +13,7 @@ import {
   type PluginAgentStatusSnapshot
 } from '../../shared/plugins/plugin-workspace-read-context'
 import type { PluginHostServices } from './plugin-host-methods'
+import { PluginSidecarMailbox } from './plugin-sidecar-mailbox'
 import { PluginSecretsStore } from './plugin-secrets-store'
 import { PluginKvStore } from './plugin-storage-store'
 import {
@@ -61,8 +62,10 @@ export function bindPluginHostServices(input: {
   subscribeEvents: (pluginKey: string, events: PluginEventName[]) => PluginEventName[]
   readContextSources?: PluginWorkspaceReadContextSources
   readFocusedSurface?: () => PluginFocusedSurface | null
+  sidecarMailbox?: PluginSidecarMailbox
 }): PluginHostServices {
   const { delegate, pluginsDataDir, subscribeEvents, readContextSources } = input
+  const sidecarMailbox = input.sidecarMailbox ?? new PluginSidecarMailbox()
   return {
     resolveActiveWorktreeContext: async () => {
       const context = await delegate.resolveActiveWorktreeContext()
@@ -138,6 +141,10 @@ export function bindPluginHostServices(input: {
         new PluginKvStore(pluginsDataDir, key, 'settings.json').set(itemKey, value)
     },
     subscribeEvents,
-    readFocusedSurface: input.readFocusedSurface ?? (() => null)
+    readFocusedSurface: input.readFocusedSurface ?? (() => null),
+    sidecar: {
+      resolvePlacement: (pluginId) => sidecarMailbox.resolvePlacement(pluginId),
+      publish: (pluginId, frame) => sidecarMailbox.publish(pluginId, frame)
+    }
   }
 }
