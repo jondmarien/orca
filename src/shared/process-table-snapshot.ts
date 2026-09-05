@@ -13,9 +13,15 @@ export type ProcessTableRow = {
   command: string
 }
 
+/** How much older than its own await a TTL-cached capture may be, on top of the capture's own
+ *  duration. Reported ages carry both, so this alone is not the staleness bound.
+ *  Lives here (not the Node exec reader) so the sandboxed renderer can import the number. */
+export const PROCESS_TABLE_SNAPSHOT_MAX_STALENESS_MS = 500
+
 /** Columns used by the evidence reader. Keep command last so its spaces survive parsing. */
+const snapshotHostPlatform = typeof process !== 'undefined' ? process.platform : ''
 export const PS_ARGS = (
-  process.platform === 'darwin'
+  snapshotHostPlatform === 'darwin'
     ? ['-axo', 'pid=,ppid=,pgid=,tpgid=,stat=,tty=,lstart=,command=']
     : ['-axo', 'pid=,ppid=,pgid=,tpgid=,stat=,tty=,etimes=,command=']
 ) as readonly string[]
@@ -28,7 +34,7 @@ export const PS_ARGS = (
  * marker comes from `/proc/<pid>/stat` for the pane subtree only.
  */
 export const CHEAP_PS_ARGS = (
-  process.platform === 'darwin'
+  snapshotHostPlatform === 'darwin'
     ? ['-axo', 'pid=,ppid=,pgid=,tpgid=,stat=,lstart=']
     : ['-axo', 'pid=,ppid=,pgid=,tpgid=,stat=']
 ) as readonly string[]
