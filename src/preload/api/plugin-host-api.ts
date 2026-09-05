@@ -191,6 +191,8 @@ export type PluginsApi = {
     windowFocused?: boolean
     kind?: 'terminal' | 'agent' | 'browser' | 'editor' | 'simulator' | 'command-palette'
     title?: string | null
+    worktreeId?: string | null
+    agentId?: string | null
   }) => void
   /** Fires whenever installed plugins, worker states, panels, or content packs change. */
   onChanged: (callback: (event: PluginChangeEvent) => void) => () => void

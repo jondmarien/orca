@@ -216,6 +216,9 @@ const HANDLERS = new Map<string, BoundPluginHostMethod>([
   }),
   definePluginMethod('sidecar.publish', async (params, { pluginId, services }) => {
     return services.sidecar.publish(pluginId, params as PluginSidecarPublishParams)
+  }),
+  definePluginMethod('ui.readFocus', async (_params, { services }) => {
+    return { focusedSurface: services.readFocusedSurface() }
   })
 ])
 

@@ -8,6 +8,8 @@ import { clampUtf8TextPrefix } from '../utf8-byte-limits'
  */
 
 export const PLUGIN_FOCUSED_SURFACE_TITLE_MAX_BYTES = 80
+/** Same bound as worktree.* / agent.status.changed join keys. */
+export const PLUGIN_FOCUSED_SURFACE_JOIN_ID_MAX_LENGTH = 2048
 export const PLUGIN_FOCUSED_SURFACE_KINDS = [
   'terminal',
   'agent',
@@ -21,10 +23,16 @@ export type PluginFocusedSurfaceKind = (typeof PLUGIN_FOCUSED_SURFACE_KINDS)[num
 
 export const pluginFocusedSurfaceKindSchema = z.enum(PLUGIN_FOCUSED_SURFACE_KINDS)
 
+const pluginFocusJoinIdSchema = z.string().min(1).max(PLUGIN_FOCUSED_SURFACE_JOIN_ID_MAX_LENGTH)
+
 export const pluginFocusedSurfaceSchema = z
   .object({
     kind: pluginFocusedSurfaceKindSchema,
-    title: z.string().max(PLUGIN_FOCUSED_SURFACE_TITLE_MAX_BYTES).nullable()
+    title: z.string().max(PLUGIN_FOCUSED_SURFACE_TITLE_MAX_BYTES).nullable(),
+    /** Opaque join key matching worktree.* / agent.status.changed.worktreeId. */
+    worktreeId: pluginFocusJoinIdSchema.nullable().optional(),
+    /** Focused agent-session tab id; join paneKey with `${agentId}:`. */
+    agentId: pluginFocusJoinIdSchema.nullable().optional()
   })
   .strict()
 
@@ -43,11 +51,24 @@ export const pluginUiFocusReportSchema = z
   .object({
     windowFocused: z.boolean().optional(),
     kind: pluginFocusedSurfaceKindSchema.optional(),
-    title: z.string().max(4096).nullable().optional()
+    title: z.string().max(4096).nullable().optional(),
+    worktreeId: z.string().max(PLUGIN_FOCUSED_SURFACE_JOIN_ID_MAX_LENGTH).nullable().optional(),
+    agentId: z.string().max(PLUGIN_FOCUSED_SURFACE_JOIN_ID_MAX_LENGTH).nullable().optional()
   })
   .strict()
 
 export type PluginUiFocusReport = z.infer<typeof pluginUiFocusReportSchema>
+
+export function projectPluginFocusJoinId(raw: string | null | undefined): string | null {
+  if (raw == null) {
+    return null
+  }
+  const trimmed = raw.trim()
+  if (trimmed.length === 0 || trimmed.length > PLUGIN_FOCUSED_SURFACE_JOIN_ID_MAX_LENGTH) {
+    return null
+  }
+  return trimmed
+}
 
 export function projectPluginFocusedTitle(raw: string | null | undefined): string | null {
   if (raw == null) {
@@ -93,10 +114,18 @@ export function projectPluginUiFocusReport(raw: unknown): PluginFocusedSurface |
   if (!parsed.success || parsed.data.windowFocused === false || parsed.data.kind === undefined) {
     return null
   }
-  return {
+  const surface: PluginFocusedSurface = {
     kind: parsed.data.kind,
     title: projectPluginFocusedTitle(parsed.data.title)
   }
+  const worktreeId = projectPluginFocusJoinId(parsed.data.worktreeId)
+  if (worktreeId) {
+    surface.worktreeId = worktreeId
+  }
+  if (parsed.data.kind === 'agent') {
+    surface.agentId = projectPluginFocusJoinId(parsed.data.agentId)
+  }
+  return surface
 }
 
 export function pluginFocusedSurfacesEqual(
@@ -109,5 +138,10 @@ export function pluginFocusedSurfacesEqual(
   if (left === null || right === null) {
     return false
   }
-  return left.kind === right.kind && left.title === right.title
+  return (
+    left.kind === right.kind &&
+    left.title === right.title &&
+    (left.worktreeId ?? null) === (right.worktreeId ?? null) &&
+    (left.agentId ?? null) === (right.agentId ?? null)
+  )
 }

@@ -51,6 +51,51 @@ describe('projectPluginUiFocusReport', () => {
       })
     ).toEqual({ kind: 'editor', title: 'file.ts' })
   })
+
+  it('keeps worktreeId as an opaque join key and does not basename it', () => {
+    expect(
+      projectPluginUiFocusReport({
+        windowFocused: true,
+        kind: 'terminal',
+        title: 'zsh',
+        worktreeId: 'repo-1::/Users/private/orca'
+      })
+    ).toEqual({
+      kind: 'terminal',
+      title: 'zsh',
+      worktreeId: 'repo-1::/Users/private/orca'
+    })
+  })
+
+  it('includes agentId only for agent surfaces', () => {
+    expect(
+      projectPluginUiFocusReport({
+        windowFocused: true,
+        kind: 'agent',
+        title: 'Claude',
+        worktreeId: 'wt-1',
+        agentId: 'tab-agent-1'
+      })
+    ).toEqual({
+      kind: 'agent',
+      title: 'Claude',
+      worktreeId: 'wt-1',
+      agentId: 'tab-agent-1'
+    })
+    expect(
+      projectPluginUiFocusReport({
+        windowFocused: true,
+        kind: 'terminal',
+        title: 'zsh',
+        worktreeId: 'wt-1',
+        agentId: 'tab-agent-1'
+      })
+    ).toEqual({
+      kind: 'terminal',
+      title: 'zsh',
+      worktreeId: 'wt-1'
+    })
+  })
 })
 
 describe('plugin focus schemas', () => {
@@ -69,6 +114,14 @@ describe('plugin focus schemas', () => {
         worktreeId: '/Users/private/repo'
       }).success
     ).toBe(false)
+    expect(
+      pluginFocusedSurfaceSchema.safeParse({
+        kind: 'agent',
+        title: 'Claude',
+        worktreeId: 'repo-1::/Users/private/orca',
+        agentId: 'tab-agent-1'
+      }).success
+    ).toBe(true)
   })
 })
 
@@ -78,5 +131,11 @@ describe('pluginFocusedSurfacesEqual', () => {
     expect(pluginFocusedSurfacesEqual(surface, { ...surface })).toBe(true)
     expect(pluginFocusedSurfacesEqual(surface, { kind: 'browser', title: 'other.com' })).toBe(false)
     expect(pluginFocusedSurfacesEqual(null, null)).toBe(true)
+    expect(
+      pluginFocusedSurfacesEqual(
+        { kind: 'agent', title: 'Claude', worktreeId: 'wt-1', agentId: 'a' },
+        { kind: 'agent', title: 'Claude', worktreeId: 'wt-1', agentId: 'b' }
+      )
+    ).toBe(false)
   })
 })

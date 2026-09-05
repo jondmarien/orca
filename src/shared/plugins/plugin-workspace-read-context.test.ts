@@ -150,6 +150,34 @@ describe('workspace.readContext result schema', () => {
     ).toBe(true)
   })
 
+  it('accepts focusedSurface join keys without a path field', () => {
+    expect(
+      result.safeParse({
+        branch: 'main',
+        displayName: 'Repo',
+        terminals: [],
+        focusedSurface: {
+          kind: 'agent',
+          title: 'Claude',
+          worktreeId: 'repo-1::/Users/private/orca',
+          agentId: 'tab-agent-1'
+        }
+      }).success
+    ).toBe(true)
+    expect(
+      result.safeParse({
+        branch: 'main',
+        displayName: 'Repo',
+        terminals: [],
+        focusedSurface: {
+          kind: 'agent',
+          title: 'Claude',
+          path: '/Users/private/orca'
+        }
+      }).success
+    ).toBe(false)
+  })
+
   it('rejects a hostname-shaped extra field on executionHost', () => {
     expect(
       result.safeParse({

@@ -129,12 +129,13 @@ const successParams: Record<string, unknown> = {
   'settings.set': { key: 'theme', value: 'dark' },
   'events.subscribe': { events: ['worktree.created'] },
   'sidecar.resolvePlacement': {},
-  'sidecar.publish': { channel: 'presence', op: 'set', payload: { details: 'Working in Orca' } }
+  'sidecar.publish': { channel: 'presence', op: 'set', payload: { details: 'Working in Orca' } },
+  'ui.readFocus': {}
 }
 
 describe('plugin host main/relay conformance', () => {
-  it('runs a granted success through both transports for all 15 v0 methods', async () => {
-    expect(PLUGIN_HOST_API_V0).toHaveLength(15)
+  it('runs a granted success through both transports for all 16 v0 methods', async () => {
+    expect(PLUGIN_HOST_API_V0).toHaveLength(16)
     expect(Object.keys(successParams).sort()).toEqual(
       PLUGIN_HOST_API_V0.map((entry) => entry.name).sort()
     )
@@ -242,6 +243,13 @@ describe('plugin host main/relay conformance', () => {
       request: { method: 'workspace.readContext', params: {} },
       viaPanel: true,
       policy: () => createPolicy([]),
+      code: 'capability_denied'
+    },
+    {
+      name: 'ui.readFocus without ui:focus',
+      request: { method: 'ui.readFocus', params: {} },
+      viaPanel: true,
+      policy: () => createPolicy(['workspace:read']),
       code: 'capability_denied'
     },
     {

@@ -40,7 +40,7 @@ export function pluginCapabilityDescription(kind: string, fallback: string): str
     case 'ui:focus':
       return translate(
         'auto.components.settings.PluginConsentDialog.capability.uiFocus',
-        'Read the focused UI surface (kind and a truncated tab title). Off unless you grant this permission.'
+        'Read the focused UI surface (kind, a truncated tab title, and optional worktree/agent join keys). Off unless you grant this permission.'
       )
     case 'sidecar':
       return translate(

@@ -24,7 +24,8 @@ the network, `plugin.log`, or another plugin's files.
 
 | Method                  | Capability           | Notes                            |
 | ----------------------- | -------------------- | -------------------------------- |
-| `workspace.readContext` | `workspace:read`     | Focused worktree projection only |
+| `workspace.readContext` | `workspace:read`     | Focused worktree projection only. `focusedSurface` only with `ui:focus` |
+| `ui.readFocus`          | `ui:focus`           | `{ focusedSurface }` poll; pluginApi 1.2. See [plugin-ui-focus.md](./plugin-ui-focus.md) |
 | `terminal.sendText`     | `terminal:send`      | Explicit terminal id             |
 | `notifications.show`    | `notifications:show` | Labeled with the plugin name     |
 | `settings.get`          | `settings:own`       | Own `settings.json` only         |

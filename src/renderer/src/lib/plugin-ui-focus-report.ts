@@ -28,7 +28,12 @@ export function derivePluginUiFocusReport(state: PluginUiFocusViewState): Plugin
     return { windowFocused: false }
   }
   if (state.activeModal && COMMAND_PALETTE_MODALS.has(state.activeModal)) {
-    return { windowFocused: true, kind: 'command-palette', title: null }
+    return {
+      windowFocused: true,
+      kind: 'command-palette',
+      title: null,
+      ...focusJoinKeys(state, 'command-palette')
+    }
   }
   const kind = kindFromVisibleTabType(state.activeTabType)
   if (!kind) {
@@ -37,7 +42,22 @@ export function derivePluginUiFocusReport(state: PluginUiFocusViewState): Plugin
   return {
     windowFocused: true,
     kind,
-    title: activeTabTitle(state)
+    title: activeTabTitle(state),
+    ...focusJoinKeys(state, kind)
+  }
+}
+
+function focusJoinKeys(
+  state: PluginUiFocusViewState,
+  kind: PluginFocusedSurfaceKind
+): Pick<PluginUiFocusReport, 'worktreeId' | 'agentId'> {
+  const worktreeId = state.activeWorktreeId?.trim() || undefined
+  if (kind !== 'agent') {
+    return worktreeId ? { worktreeId } : {}
+  }
+  return {
+    ...(worktreeId ? { worktreeId } : {}),
+    agentId: activeTab(state)?.id ?? null
   }
 }
 
@@ -61,7 +81,9 @@ function kindFromVisibleTabType(
   }
 }
 
-function activeTabTitle(state: PluginUiFocusViewState): string | null {
+function activeTab(
+  state: PluginUiFocusViewState
+): NonNullable<PluginUiFocusViewState['unifiedTabsByWorktree']>[string][number] | null {
   const worktreeId = state.activeWorktreeId
   if (!worktreeId) {
     return null
@@ -75,9 +97,15 @@ function activeTabTitle(state: PluginUiFocusViewState): string | null {
   if (!group?.activeTabId) {
     return null
   }
-  const tab = (state.unifiedTabsByWorktree?.[worktreeId] ?? []).find(
-    (entry) => entry.id === group.activeTabId
+  return (
+    (state.unifiedTabsByWorktree?.[worktreeId] ?? []).find(
+      (entry) => entry.id === group.activeTabId
+    ) ?? null
   )
+}
+
+function activeTabTitle(state: PluginUiFocusViewState): string | null {
+  const tab = activeTab(state)
   if (!tab) {
     return null
   }
