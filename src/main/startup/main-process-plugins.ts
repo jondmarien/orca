@@ -21,6 +21,8 @@ import { agentHookServer } from '../agent-hooks/server'
 import { emitPluginWorktreeLifecycle } from './main-process-pty-startup'
 import { mainProcessState as state } from './main-process-state'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
+import { projectPluginAgentContext } from '../../shared/plugins/plugin-workspace-read-context'
+import { readActiveOrcaProfileLabel } from '../plugins/plugin-orca-profile-label'
 
 export async function initializeMainProcessPlugins(runtime: OrcaRuntimeService): Promise<void> {
   const store = state.store
@@ -157,11 +159,17 @@ export async function initializeMainProcessPlugins(runtime: OrcaRuntimeService):
     if (enriched.restoredUnconfirmed) {
       return
     }
+    const agent = projectPluginAgentContext({
+      type: enriched.payload.agentType,
+      model: enriched.payload.model,
+      profile: readActiveOrcaProfileLabel(app.getPath('userData'))
+    })
     state.pluginService?.emitEvent('agent.status.changed', {
       worktreeId: enriched.worktreeId ?? null,
       paneKey: enriched.paneKey,
       state: enriched.payload.state,
-      receivedAt: enriched.receivedAt
+      receivedAt: enriched.receivedAt,
+      ...(agent ? { agent } : {})
     })
   })
   runtime.onWorktreeLifecycle(emitPluginWorktreeLifecycle)

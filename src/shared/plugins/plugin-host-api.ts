@@ -21,6 +21,24 @@ export const PANEL_ACTION_TEXT_MAX_LENGTH = 4096
 export const PLUGIN_WORKSPACE_TERMINAL_LIMIT = 50
 export const PLUGIN_WORKSPACE_LABEL_MAX_LENGTH = 512
 export const PLUGIN_TERMINAL_ID_MAX_LENGTH = 1024
+export const PLUGIN_AGENT_TYPE_MAX_LENGTH = 40
+export const PLUGIN_AGENT_MODEL_MAX_LENGTH = 120
+export const PLUGIN_AGENT_PROFILE_MAX_LENGTH = 80
+
+export const pluginWorkspaceExecutionHostSchema = z
+  .object({
+    kind: z.enum(['local', 'ssh', 'runtime']),
+    label: z.string().min(1).max(PLUGIN_WORKSPACE_LABEL_MAX_LENGTH)
+  })
+  .strict()
+
+export const pluginWorkspaceAgentContextSchema = z
+  .object({
+    type: z.string().min(1).max(PLUGIN_AGENT_TYPE_MAX_LENGTH).nullable().optional(),
+    model: z.string().min(1).max(PLUGIN_AGENT_MODEL_MAX_LENGTH).nullable().optional(),
+    profile: z.string().min(1).max(PLUGIN_AGENT_PROFILE_MAX_LENGTH).nullable().optional()
+  })
+  .strict()
 
 const workspaceReadContextParams = z.object({}).strict().optional()
 const workspaceReadContextResult = z
@@ -37,10 +55,17 @@ const workspaceReadContextResult = z
           })
           .strict()
       )
-      .max(PLUGIN_WORKSPACE_TERMINAL_LIMIT)
+      .max(PLUGIN_WORKSPACE_TERMINAL_LIMIT),
+    /** Execution host of the focused worktree. Labels only — never hostname. */
+    executionHost: pluginWorkspaceExecutionHostSchema.nullable().optional(),
+    /** Agent type / model / Orca profile labels when the host already knows them. */
+    agent: pluginWorkspaceAgentContextSchema.nullable().optional()
   })
   .strict()
   .nullable()
+
+export type PluginWorkspaceExecutionHost = z.infer<typeof pluginWorkspaceExecutionHostSchema>
+export type PluginWorkspaceAgentContext = z.infer<typeof pluginWorkspaceAgentContextSchema>
 
 const terminalSendTextParams = z.object({
   /** Explicit target. Never "the active terminal": a focus change must not

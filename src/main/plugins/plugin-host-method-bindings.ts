@@ -4,14 +4,19 @@ import {
   PLUGIN_TERMINAL_ID_MAX_LENGTH,
   PLUGIN_WORKSPACE_LABEL_MAX_LENGTH,
   PLUGIN_WORKSPACE_TERMINAL_LIMIT,
-  type PluginHostMethodSpec
+  type PluginHostMethodSpec,
+  type PluginWorkspaceAgentContext,
+  type PluginWorkspaceExecutionHost
 } from '../../shared/plugins/plugin-host-api'
 import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
+import { projectPluginAgentContext } from '../../shared/plugins/plugin-workspace-read-context'
 
 export type PluginWorktreeContext = {
   worktreeId: string
   branch: string
   displayName: string
+  executionHost?: PluginWorkspaceExecutionHost | null
+  agent?: PluginWorkspaceAgentContext | null
 }
 
 /** Structural service surface the facade delegates to. Desktop main binds it
@@ -75,6 +80,7 @@ const HANDLERS = new Map<string, BoundPluginHostMethod>([
       return null
     }
     const terminals = await services.listWorktreeTerminals(context.worktreeId)
+    const agent = projectPluginAgentContext(context.agent ?? {})
     // Why: Orca worktree ids embed provider paths, so the public projection
     // must select safe fields instead of spreading the internal context.
     return {
@@ -86,7 +92,16 @@ const HANDLERS = new Map<string, BoundPluginHostMethod>([
             terminal.id.length > 0 && terminal.id.length <= PLUGIN_TERMINAL_ID_MAX_LENGTH
         )
         .slice(0, PLUGIN_WORKSPACE_TERMINAL_LIMIT)
-        .map((terminal) => ({ id: terminal.id }))
+        .map((terminal) => ({ id: terminal.id })),
+      ...(context.executionHost
+        ? {
+            executionHost: {
+              kind: context.executionHost.kind,
+              label: context.executionHost.label.slice(0, PLUGIN_WORKSPACE_LABEL_MAX_LENGTH)
+            }
+          }
+        : {}),
+      ...(agent ? { agent } : {})
     }
   }),
   definePluginMethod('terminal.sendText', async (params, { services }) => {

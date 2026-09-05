@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { PluginEventName } from './plugin-manifest'
+import { pluginWorkspaceAgentContextSchema } from './plugin-host-api'
 
 /**
  * Payload contracts for the v0 plugin event set (worktree lifecycle + agent
@@ -29,7 +30,8 @@ export const agentStatusChangedPayloadSchema = z.object({
   worktreeId: z.string().min(1).max(2048).nullable(),
   paneKey: z.string().min(1).max(2048),
   state: z.string().min(1).max(256),
-  receivedAt: z.number().finite().positive()
+  receivedAt: z.number().finite().positive(),
+  agent: pluginWorkspaceAgentContextSchema.nullable().optional()
 })
 
 export const PLUGIN_EVENT_PAYLOAD_SCHEMAS: Record<PluginEventName, z.ZodTypeAny> = {

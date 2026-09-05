@@ -33,7 +33,8 @@ export type PluginCapability = z.infer<typeof pluginCapabilitySchema>
 /** Plain-language consent copy per capability. Shown verbatim in the install
  *  preview / consent dialog; keep each line honest about what is enforced. */
 export const PLUGIN_CAPABILITY_DESCRIPTIONS: Record<PluginCapabilityKind, string> = {
-  'workspace:read': 'Read the name, branch, and terminal list of your focused worktree',
+  'workspace:read':
+    'Read the name, branch, terminal list, execution-host label, and agent labels of your focused worktree',
   'terminal:send': 'Type text into a terminal you can see (always a specific terminal)',
   'notifications:show': 'Show desktop notifications labeled with the plugin name',
   storage: "Store data in the plugin's own storage folder",

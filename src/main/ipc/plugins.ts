@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import { z } from 'zod'
 import type { Store } from '../persistence'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
@@ -27,6 +27,11 @@ import {
   registerPluginMarketplaceHandlers,
   type PluginMarketplaceHandlerServices
 } from './plugin-marketplaces'
+import { agentHookServer } from '../agent-hooks/server'
+import {
+  createPluginWorkspaceReadContextSources,
+  decoratePluginWorkspaceReadContext
+} from '../plugins/plugin-workspace-read-context-delegate'
 
 export function parsePluginConsentArgs(args: unknown): z.infer<typeof pluginConsentRequestSchema> {
   return pluginConsentRequestSchema.parse(args)
@@ -96,7 +101,25 @@ export function registerPluginHandlers(
   // The runtime IS the delegate: the structural PluginRuntimeDelegate type
   // keeps the facade electron-free while main binds the real service.
   if (runtime) {
-    pluginService.setRuntimeDelegate(runtime)
+    pluginService.setRuntimeDelegate(
+      decoratePluginWorkspaceReadContext(
+        runtime,
+        createPluginWorkspaceReadContextSources({
+          listSshTargets: () =>
+            store.getSshTargets().map((target) => ({ id: target.id, label: target.label })),
+          getHostSettingOverrides: () => store.getSettings().hostSettingOverrides,
+          listAgentStatuses: () =>
+            agentHookServer.getStatusSnapshot().map((row) => ({
+              worktreeId: row.worktreeId ?? null,
+              state: row.state,
+              agentType: row.agentType,
+              model: row.model,
+              receivedAt: row.receivedAt
+            })),
+          userDataPath: app.getPath('userData')
+        })
+      )
+    )
   }
 
   store.onSettingsChanged((updates) => {

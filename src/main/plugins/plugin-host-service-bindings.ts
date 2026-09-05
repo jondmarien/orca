@@ -1,5 +1,16 @@
 import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
-import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
+import {
+  PLUGIN_WORKSPACE_TERMINAL_LIMIT,
+  type PluginWorkspaceAgentContext,
+  type PluginWorkspaceExecutionHost
+} from '../../shared/plugins/plugin-host-api'
+import type { HostContextLabelSources } from '../../shared/worktree/host-context-labels'
+import {
+  projectPluginAgentContext,
+  projectPluginExecutionHost,
+  selectPluginAgentLabels,
+  type PluginAgentStatusSnapshot
+} from '../../shared/plugins/plugin-workspace-read-context'
 import type { PluginHostServices } from './plugin-host-methods'
 import { PluginSecretsStore } from './plugin-secrets-store'
 import { PluginKvStore } from './plugin-storage-store'
@@ -8,6 +19,13 @@ import {
   isAgentSessionPtyWriteRefusedError
 } from '../../shared/agent-session-pty-write-admission'
 
+/** Optional live sources for additive readContext labels. Absent in fakes. */
+export type PluginWorkspaceReadContextSources = {
+  hostLabelSources?: () => HostContextLabelSources
+  listAgentStatuses?: () => readonly PluginAgentStatusSnapshot[]
+  getProfileLabel?: () => string | null
+}
+
 /** Structural subset of OrcaRuntimeService exposed to plugin facade bindings. */
 export type PluginRuntimeDelegate = {
   resolveActiveWorktreeContext(): Promise<{
@@ -15,6 +33,10 @@ export type PluginRuntimeDelegate = {
     path: string
     branch: string
     displayName: string
+    hostId?: string | null
+    createdWithAgent?: string | null
+    executionHost?: PluginWorkspaceExecutionHost | null
+    agent?: PluginWorkspaceAgentContext | null
   } | null>
   listTerminals(
     worktreeSelector?: string,
@@ -36,20 +58,39 @@ export function bindPluginHostServices(input: {
   delegate: PluginRuntimeDelegate
   pluginsDataDir: string
   subscribeEvents: (pluginKey: string, events: PluginEventName[]) => PluginEventName[]
+  readContextSources?: PluginWorkspaceReadContextSources
 }): PluginHostServices {
-  const { delegate, pluginsDataDir, subscribeEvents } = input
+  const { delegate, pluginsDataDir, subscribeEvents, readContextSources } = input
   return {
     resolveActiveWorktreeContext: async () => {
       const context = await delegate.resolveActiveWorktreeContext()
       if (!context) {
         return null
       }
+      const selected = selectPluginAgentLabels(
+        readContextSources?.listAgentStatuses?.() ?? [],
+        context.worktreeId,
+        context.createdWithAgent
+      )
       // Why: retain the internal id only for host-side terminal membership;
       // the public handler projects it out because it embeds provider paths.
       return {
         worktreeId: context.worktreeId,
         branch: context.branch,
-        displayName: context.displayName
+        displayName: context.displayName,
+        executionHost:
+          context.executionHost ??
+          projectPluginExecutionHost(
+            context.hostId,
+            readContextSources?.hostLabelSources?.() ?? {}
+          ),
+        agent:
+          context.agent ??
+          projectPluginAgentContext({
+            type: selected.type,
+            model: selected.model,
+            profile: readContextSources?.getProfileLabel?.() ?? null
+          })
       }
     },
     listWorktreeTerminals: async (worktreeId) => {

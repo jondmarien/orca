@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
+import { getLocalExecutionHostLabel } from '../../shared/execution-host'
 import { bindPluginHostServices, type PluginRuntimeDelegate } from './plugin-host-service-bindings'
 import { executePluginHostCall, type PluginHostServices } from './plugin-host-methods'
 import { AgentSessionPtyWriteRefusedError } from '../../shared/agent-session-pty-write-admission'
@@ -130,7 +131,14 @@ describe('executePluginHostCall mutation auditing', () => {
   })
 })
 
-function createTerminalHarness(terminalHandles: string[]): {
+function createTerminalHarness(
+  terminalHandles: string[],
+  extras: {
+    hostId?: string
+    createdWithAgent?: string
+    readContextSources?: Parameters<typeof bindPluginHostServices>[0]['readContextSources']
+  } = {}
+): {
   delegate: PluginRuntimeDelegate
   services: PluginHostServices
 } {
@@ -139,7 +147,9 @@ function createTerminalHarness(terminalHandles: string[]): {
       worktreeId: 'worktree-1',
       path: '/Users/private/repo',
       branch: 'main',
-      displayName: 'Repo'
+      displayName: 'Repo',
+      ...(extras.hostId ? { hostId: extras.hostId } : {}),
+      ...(extras.createdWithAgent ? { createdWithAgent: extras.createdWithAgent } : {})
     }),
     listTerminals: vi.fn().mockResolvedValue({
       terminals: terminalHandles.map((handle) => ({ handle, title: null }))
@@ -152,7 +162,8 @@ function createTerminalHarness(terminalHandles: string[]): {
     services: bindPluginHostServices({
       delegate,
       pluginsDataDir: join(tmpdir(), 'plugin-host-methods-test'),
-      subscribeEvents: vi.fn().mockReturnValue([])
+      subscribeEvents: vi.fn().mockReturnValue([]),
+      ...(extras.readContextSources ? { readContextSources: extras.readContextSources } : {})
     })
   }
 }
@@ -241,6 +252,84 @@ describe('terminal.sendText explicit worktree routing', () => {
       PLUGIN_WORKSPACE_TERMINAL_LIMIT
     )
     expect(delegate.listTerminals).toHaveBeenCalledTimes(1)
+    expect(outcome).not.toHaveProperty('value.executionHost')
+    expect(outcome).not.toHaveProperty('value.agent')
+  })
+
+  it('projects additive executionHost and agent labels when the host knows them', async () => {
+    const { delegate, services } = createTerminalHarness(['terminal:local:one'], {
+      hostId: 'ssh:build-box',
+      createdWithAgent: 'codex',
+      readContextSources: {
+        hostLabelSources: () => ({
+          hostLabelById: new Map([['ssh:build-box', 'Build box']])
+        }),
+        listAgentStatuses: () => [
+          {
+            worktreeId: 'worktree-1',
+            state: 'working',
+            agentType: 'claude',
+            model: 'opus-4',
+            receivedAt: 10
+          }
+        ],
+        getProfileLabel: () => 'Personal'
+      }
+    })
+
+    const outcome = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'workspace.readContext',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['workspace:read'],
+      services
+    })
+
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        branch: 'main',
+        displayName: 'Repo',
+        terminals: [{ id: 'terminal:local:one' }],
+        executionHost: { kind: 'ssh', label: 'Build box' },
+        agent: { type: 'claude', model: 'opus-4', profile: 'Personal' }
+      }
+    })
+    expect(outcome).not.toHaveProperty('value.path')
+    expect(outcome).not.toHaveProperty('value.worktreeId')
+    expect(outcome).not.toHaveProperty('value.hostId')
+    expect(delegate.listTerminals).toHaveBeenCalledTimes(1)
+  })
+
+  it('projects a local host label and createdWithAgent when no live status exists', async () => {
+    const { services } = createTerminalHarness(['terminal:local:one'], {
+      hostId: 'local',
+      createdWithAgent: 'codex',
+      readContextSources: {
+        getProfileLabel: () => 'Personal'
+      }
+    })
+
+    const outcome = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'workspace.readContext',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['workspace:read'],
+      services
+    })
+
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        branch: 'main',
+        displayName: 'Repo',
+        terminals: [{ id: 'terminal:local:one' }],
+        executionHost: { kind: 'local', label: getLocalExecutionHostLabel() },
+        agent: { type: 'codex', model: null, profile: 'Personal' }
+      }
+    })
   })
 })
 
