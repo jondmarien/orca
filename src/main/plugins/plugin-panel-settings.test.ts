@@ -158,7 +158,7 @@ describe('panel settings.get/set admission', () => {
     expect(new PluginKvStore(pluginsDataDir, demo.pluginKey, 'settings.json').getAll()).toEqual({})
   })
 
-  it('denies panel settings without settings:own and still forbids storage', async () => {
+  it('denies panel settings without settings:own and storage without storage', async () => {
     const { controller, demo } = await createHarness({ capabilities: ['notifications:show'] })
     const entry = await controller.open('runtime:one', demo.pluginKey, 'dashboard')
 
@@ -174,7 +174,7 @@ describe('panel settings.get/set admission', () => {
         action: 'storage.get',
         params: { key: 'alpha' }
       })
-    ).resolves.toMatchObject({ ok: false, code: 'panel_forbidden' })
+    ).resolves.toMatchObject({ ok: false, code: 'capability_denied' })
   })
 
   it('charges oversized settings writes against the panel message budget', async () => {

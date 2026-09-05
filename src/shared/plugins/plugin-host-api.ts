@@ -156,7 +156,8 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     scope: 'plugin-private',
     capability: 'storage',
     mutation: false,
-    panel: false,
+    // Session-bound own store; panel payloads still cap at PANEL_MESSAGE_MAX_BYTES.
+    panel: true,
     params: storageGetParams,
     result: storageGetResult
   }),
@@ -166,7 +167,7 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     scope: 'plugin-private',
     capability: 'storage',
     mutation: true,
-    panel: false,
+    panel: true,
     params: storageSetParams,
     result: storageSetResult
   }),
@@ -176,7 +177,7 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     scope: 'plugin-private',
     capability: 'storage',
     mutation: true,
-    panel: false,
+    panel: true,
     params: storageDeleteParams,
     result: storageDeleteResult
   }),
@@ -186,7 +187,7 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     scope: 'plugin-private',
     capability: 'storage',
     mutation: false,
-    panel: false,
+    panel: true,
     params: storageKeysParams,
     result: storageKeysResult
   }),

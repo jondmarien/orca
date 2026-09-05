@@ -19,7 +19,9 @@ export const PANEL_PING_TYPE = 'orca-panel-ping'
 export const PANEL_PONG_TYPE = 'orca-panel-pong'
 export const PLUGIN_PANEL_FRAME_NAME_PREFIX = 'orca-plugin-panel:'
 
-/** Per-plugin bridge budgets, enforced host-side. */
+/** Per-plugin bridge budgets, enforced host-side. Panel-callable
+ *  `storage.*` requests and results must fit this envelope even though
+ *  worker storage values may be larger (`PLUGIN_STORAGE_VALUE_MAX_BYTES`). */
 export const PANEL_MESSAGE_MAX_BYTES = 64 * 1024
 export const PANEL_MESSAGE_RATE_LIMIT = { maxMessages: 30, perMs: 10_000 }
 

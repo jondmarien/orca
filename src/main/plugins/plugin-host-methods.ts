@@ -2,6 +2,7 @@ import { getBoundPluginHostMethod, type PluginHostServices } from './plugin-host
 import { isQualifiedPluginKey } from '../../shared/plugins/plugin-manifest'
 import { gatePluginHostCall as decidePluginHostCall } from '../../shared/plugins/plugin-capability-gate'
 import type { PluginCapabilityKind } from '../../shared/plugins/plugin-capabilities'
+import { admitPluginPanelResult } from '../../shared/plugins/plugin-panel-call-admission'
 import type { PluginPanelActionOutcome } from '../../shared/plugins/plugin-panel-bridge'
 import type { PluginAuditLog } from './plugin-audit-log'
 
@@ -103,6 +104,13 @@ export async function executePluginHostCall(
         ok: false,
         code: 'action_failed',
         error: `internal: malformed ${input.method} result`
+      }
+    }
+    if (input.viaPanel) {
+      const oversizedResult = admitPluginPanelResult(validated.data)
+      if (oversizedResult) {
+        await auditMutation('error').catch(() => undefined)
+        return oversizedResult
       }
     }
     await auditMutation('ok').catch(() => undefined)
