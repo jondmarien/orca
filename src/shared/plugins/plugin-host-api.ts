@@ -140,6 +140,7 @@ export type PluginHostMethodSpec = {
     | 'desktop'
     | 'host-events'
     | 'sidecar'
+    | 'ui-focus'
   stability: 'experimental'
   capability: PluginCapabilityKind
   /** Mutations are audit-logged with actor `plugin:<id>`. */
@@ -310,6 +311,20 @@ export const PLUGIN_HOST_API_V0: readonly PluginHostMethodSpec[] = [
     panel: false,
     params: sidecarPublishParamsSchema,
     result: sidecarPublishResultSchema
+  }),
+  spec({
+    name: 'ui.readFocus',
+    since: '1.2',
+    scope: 'ui-focus',
+    capability: 'ui:focus',
+    mutation: false,
+    panel: true,
+    params: z.object({}).strict().optional(),
+    result: z
+      .object({
+        focusedSurface: pluginFocusedSurfaceSchema.nullable()
+      })
+      .strict()
   })
 ]
 

@@ -95,6 +95,21 @@ describe('PLUGIN_HOST_API_V0 panel surface', () => {
     ).toMatchObject({ granted: false, code: 'panel_forbidden' })
   })
 
+  it('lets panels poll ui.readFocus only with ui:focus', () => {
+    expect(getPluginHostMethodSpec('ui.readFocus')?.panel).toBe(true)
+    expect(getPluginHostMethodSpec('ui.readFocus')?.capability).toBe('ui:focus')
+    expect(isPluginPanelAction('ui.readFocus')).toBe(true)
+    expect(
+      gatePluginHostCall({ grantedCapabilities: ['ui:focus'], viaPanel: true }, 'ui.readFocus')
+    ).toEqual({ granted: true })
+    expect(
+      gatePluginHostCall(
+        { grantedCapabilities: ['workspace:read'], viaPanel: true },
+        'ui.readFocus'
+      )
+    ).toMatchObject({ granted: false, code: 'capability_denied' })
+  })
+
   it('still denies storage when the plugin did not consent to it', () => {
     expect(
       gatePluginHostCall(

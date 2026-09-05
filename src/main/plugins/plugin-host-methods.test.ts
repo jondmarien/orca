@@ -387,6 +387,47 @@ describe('terminal.sendText explicit worktree routing', () => {
         focusedSurface: { kind: 'terminal', title: 'zsh' }
       }
     })
+    expect(withFocus).not.toHaveProperty('value.worktreeId')
+  })
+
+  it('returns the current focused surface from ui.readFocus only with ui:focus', async () => {
+    const { services } = createTerminalHarness(['terminal:local:one'])
+    services.readFocusedSurface = vi.fn().mockReturnValue({
+      kind: 'agent',
+      title: 'Claude',
+      worktreeId: 'wt-1',
+      agentId: 'tab-agent-1'
+    })
+
+    const denied = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'ui.readFocus',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['workspace:read'],
+      services
+    })
+    expect(denied).toMatchObject({ ok: false, code: 'capability_denied' })
+
+    const allowed = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'ui.readFocus',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['ui:focus'],
+      services
+    })
+    expect(allowed).toEqual({
+      ok: true,
+      value: {
+        focusedSurface: {
+          kind: 'agent',
+          title: 'Claude',
+          worktreeId: 'wt-1',
+          agentId: 'tab-agent-1'
+        }
+      }
+    })
   })
 
   it('drops ui.focus.changed subscriptions without the ui:focus capability', async () => {

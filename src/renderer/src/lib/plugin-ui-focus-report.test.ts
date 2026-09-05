@@ -29,7 +29,7 @@ describe('derivePluginUiFocusReport', () => {
         activeModal: 'none',
         activeTabType: 'agent-session'
       })
-    ).toEqual({ windowFocused: true, kind: 'agent', title: null })
+    ).toEqual({ windowFocused: true, kind: 'agent', title: null, agentId: null })
     expect(
       derivePluginUiFocusReport({
         windowFocused: true,
@@ -69,7 +69,39 @@ describe('derivePluginUiFocusReport', () => {
     ).toEqual({
       windowFocused: true,
       kind: 'editor',
-      title: '/Users/private/repo/src/app.ts'
+      title: '/Users/private/repo/src/app.ts',
+      worktreeId: 'wt-1'
+    })
+  })
+
+  it('reports the active worktree and agent-session tab id as join keys', () => {
+    expect(
+      derivePluginUiFocusReport({
+        windowFocused: true,
+        activeModal: 'none',
+        activeTabType: 'agent-session',
+        activeWorktreeId: 'repo-1::/Users/private/orca',
+        activeGroupIdByWorktree: { 'repo-1::/Users/private/orca': 'g-1' },
+        groupsByWorktree: {
+          'repo-1::/Users/private/orca': [{ id: 'g-1', activeTabId: 'tab-agent-1' }]
+        },
+        unifiedTabsByWorktree: {
+          'repo-1::/Users/private/orca': [
+            {
+              id: 'tab-agent-1',
+              groupId: 'g-1',
+              label: 'Claude',
+              customLabel: null
+            }
+          ]
+        }
+      })
+    ).toEqual({
+      windowFocused: true,
+      kind: 'agent',
+      title: 'Claude',
+      worktreeId: 'repo-1::/Users/private/orca',
+      agentId: 'tab-agent-1'
     })
   })
 })

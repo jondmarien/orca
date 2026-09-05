@@ -6,14 +6,24 @@ describe('PluginUiFocusSnapshot', () => {
     const snapshot = new PluginUiFocusSnapshot()
     expect(snapshot.get()).toBeNull()
 
-    const first = snapshot.apply({ windowFocused: true, kind: 'terminal', title: 'zsh' })
+    const first = snapshot.apply({
+      windowFocused: true,
+      kind: 'terminal',
+      title: 'zsh',
+      worktreeId: 'wt-1'
+    })
     expect(first).toEqual({
       changed: true,
-      surface: { kind: 'terminal', title: 'zsh' }
+      surface: { kind: 'terminal', title: 'zsh', worktreeId: 'wt-1' }
     })
-    expect(snapshot.apply({ windowFocused: true, kind: 'terminal', title: 'zsh' }).changed).toBe(
-      false
-    )
+    expect(
+      snapshot.apply({
+        windowFocused: true,
+        kind: 'terminal',
+        title: 'zsh',
+        worktreeId: 'wt-1'
+      }).changed
+    ).toBe(false)
   })
 
   it('clears on window blur and sanitizes titles', () => {

@@ -90,4 +90,31 @@ describe('plugin panel serve RPC identity', () => {
       title: 'zsh'
     })
   })
+
+  it('forwards remote UI join keys on plugins.reportUiFocus', async () => {
+    const service = {
+      reportUiFocus: vi.fn()
+    } as unknown as PluginService
+    setPluginServiceForRpc(service)
+
+    await expect(
+      method('plugins.reportUiFocus').handler(
+        {
+          windowFocused: true,
+          kind: 'agent',
+          title: 'Claude',
+          worktreeId: 'repo-1::/Users/private/orca',
+          agentId: 'tab-agent-1'
+        },
+        context()
+      )
+    ).resolves.toEqual({ ok: true })
+    expect(service.reportUiFocus).toHaveBeenCalledWith({
+      windowFocused: true,
+      kind: 'agent',
+      title: 'Claude',
+      worktreeId: 'repo-1::/Users/private/orca',
+      agentId: 'tab-agent-1'
+    })
+  })
 })
