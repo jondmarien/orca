@@ -57,7 +57,7 @@ export class PluginSidecarMailbox {
     if (frames.length === 0) {
       return null
     }
-    return frames[frames.length - 1]!.publishedAt
+    return frames.at(-1)!.publishedAt
   }
 
   private evictOldestIfNeeded(): void {

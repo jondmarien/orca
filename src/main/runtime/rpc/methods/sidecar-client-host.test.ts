@@ -5,6 +5,7 @@ import {
   RUNTIME_CAPABILITIES,
   SIDECAR_CLIENT_HOST_RUNTIME_CAPABILITY
 } from '../../../../shared/protocol-version'
+import type { PluginSidecarStoredFrame } from '../../../../shared/plugins/plugin-sidecar-contract'
 import type { PluginService } from '../../../plugins/plugin-service'
 import { PluginSidecarMailbox } from '../../../plugins/plugin-sidecar-mailbox'
 import {
@@ -113,7 +114,7 @@ describe('sidecar.clientHost.latest', () => {
     const pulled = (await method('sidecar.clientHost.latest').handler(
       {},
       context([SIDECAR_CLIENT_HOST_RUNTIME_CAPABILITY])
-    )) as { frames: Array<Parameters<typeof applySidecarFrameOnUiMachine>[1]> }
+    )) as { frames: PluginSidecarStoredFrame[] }
 
     const applied = applySidecarFrameOnUiMachine(new PluginSidecarUiExecutor(), pulled.frames[0]!)
     expect(applied.discordIpc).toBe('not-implemented')
