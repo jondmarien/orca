@@ -186,6 +186,14 @@ export type PluginsApi = {
   getLogs: (args: { pluginKey: string }) => Promise<PluginHostLogLine[]>
   /** Re-discovers after settings edits (feature flag, dev paths). */
   refresh: () => Promise<PluginHostListEntry[]>
+  /** Fire-and-forget UI focus sample for local plugin workers. */
+  reportUiFocus: (payload: {
+    windowFocused?: boolean
+    kind?: 'terminal' | 'agent' | 'browser' | 'editor' | 'simulator' | 'command-palette'
+    title?: string | null
+    worktreeId?: string | null
+    agentId?: string | null
+  }) => void
   /** Fires whenever installed plugins, worker states, panels, or content packs change. */
   onChanged: (callback: (event: PluginChangeEvent) => void) => () => void
 }
