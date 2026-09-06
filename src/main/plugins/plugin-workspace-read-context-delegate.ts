@@ -45,9 +45,6 @@ export function decoratePluginWorkspaceReadContext(
       if (!context) {
         return null
       }
-      if (context.executionHost || context.agent) {
-        return context
-      }
       const selected = selectPluginAgentLabels(
         sources.listAgentStatuses?.() ?? [],
         context.worktreeId,
@@ -55,15 +52,16 @@ export function decoratePluginWorkspaceReadContext(
       )
       return {
         ...context,
-        executionHost: projectPluginExecutionHost(
-          context.hostId,
-          sources.hostLabelSources?.() ?? {}
-        ),
-        agent: projectPluginAgentContext({
-          type: selected.type,
-          model: selected.model,
-          profile: sources.getProfileLabel?.() ?? null
-        })
+        executionHost:
+          context.executionHost ??
+          projectPluginExecutionHost(context.hostId, sources.hostLabelSources?.() ?? {}),
+        agent:
+          context.agent ??
+          projectPluginAgentContext({
+            type: selected.type,
+            model: selected.model,
+            profile: sources.getProfileLabel?.() ?? null
+          })
       }
     }
   }

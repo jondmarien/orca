@@ -11,9 +11,15 @@ function mailboxKey(pluginKey: string, channel: PluginSidecarStoredFrame['channe
   return `${pluginKey}\0${channel}`
 }
 
+type SidecarMailboxSlot = {
+  frame: PluginSidecarStoredFrame
+  sequence: number
+}
+
 /** Process-local last-frame store shared by plugin host calls and runtime RPC. */
 export class PluginSidecarMailbox {
-  private readonly frames = new Map<string, PluginSidecarStoredFrame>()
+  private readonly frames = new Map<string, SidecarMailboxSlot>()
+  private publishSequence = 0
 
   resolvePlacement(pluginKey?: string): PluginSidecarPlacement {
     return buildSidecarPlacement(this.lastPublishedAt(pluginKey))
@@ -21,6 +27,7 @@ export class PluginSidecarMailbox {
 
   publish(pluginKey: string, input: PluginSidecarPublishParams): PluginSidecarPublishResult {
     const publishedAt = Date.now()
+    this.publishSequence += 1
     const frame: PluginSidecarStoredFrame = {
       pluginKey,
       channel: input.channel,
@@ -28,7 +35,10 @@ export class PluginSidecarMailbox {
       payload: input.op === 'clear' ? null : (input.payload ?? null),
       publishedAt
     }
-    this.frames.set(mailboxKey(pluginKey, input.channel), frame)
+    this.frames.set(mailboxKey(pluginKey, input.channel), {
+      frame,
+      sequence: this.publishSequence
+    })
     this.evictOldestIfNeeded()
     return {
       accepted: true,
@@ -38,14 +48,14 @@ export class PluginSidecarMailbox {
   }
 
   latest(pluginKey?: string): PluginSidecarStoredFrame[] {
-    const frames = [...this.frames.values()].sort((left, right) => {
-      if (left.publishedAt !== right.publishedAt) {
-        return left.publishedAt - right.publishedAt
-      }
-      return `${left.pluginKey}\0${left.channel}`.localeCompare(
-        `${right.pluginKey}\0${right.channel}`
-      )
-    })
+    const frames = [...this.frames.values()]
+      .sort((left, right) => {
+        if (left.frame.publishedAt !== right.frame.publishedAt) {
+          return left.frame.publishedAt - right.frame.publishedAt
+        }
+        return left.sequence - right.sequence
+      })
+      .map((slot) => slot.frame)
     if (!pluginKey) {
       return frames
     }

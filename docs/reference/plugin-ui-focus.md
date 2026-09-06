@@ -56,7 +56,7 @@ plugin's job.
 |---|---|---|
 | `kind` | yes, when a surface exists | Coarse label only |
 | `title` | nullable | Never a filesystem path or full URL. Path-like values become a basename; `http(s)` titles become a hostname; then truncated to 80 UTF-8 bytes |
-| `worktreeId` | optional | **Opaque join key**, same string as `worktree.created` / `worktree.removed` / `agent.status.changed.worktreeId`. Orca worktree ids embed provider paths internally. Do **not** display this as a path. Omit/`null` when unknown. `workspace.readContext` still has **no** top-level `worktreeId` |
+| `worktreeId` | optional | **Session-scoped opaque token** when the host id embeds a path (`${repoId}::${path}` or any `/` `\`). Stable for the host process so successive focus events for the same worktree match each other. Not a filesystem path. Do **not** display it. It is not necessarily equal to `worktree.created` / `agent.status.changed.worktreeId` (those events still use the host id). Non-path ids such as `wt-1` pass through. Omit/`null` when unknown. `workspace.readContext` still has **no** top-level `worktreeId` |
 | `agentId` | optional, only when `kind === 'agent'` | Focused agent-session **tab id**. `agent.status.changed.paneKey` is `${tabId}:${leafId}` — join with `paneKey.startsWith(agentId + ':')`. Not a model name, session path, or agent profile |
 
 There is no `path`, URL, hostname, or model field on this surface. Agent

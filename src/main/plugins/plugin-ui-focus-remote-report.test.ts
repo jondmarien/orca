@@ -45,16 +45,17 @@ describe('remote UI focus report on the runtime host', () => {
     expect(snapshot.get()).toEqual({
       kind: 'agent',
       title: 'secret.ts',
-      worktreeId: 'repo-1::/Users/private/orca',
+      worktreeId: 'pj_1',
       agentId: 'tab-agent-1'
     })
+    expect(snapshot.get()?.worktreeId).not.toContain('/')
     expect(project).toHaveBeenCalledWith(
       'ui.focus.changed',
       expect.objectContaining({
         focusedSurface: {
           kind: 'agent',
           title: 'secret.ts',
-          worktreeId: 'repo-1::/Users/private/orca',
+          worktreeId: 'pj_1',
           agentId: 'tab-agent-1'
         }
       })

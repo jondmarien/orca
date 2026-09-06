@@ -159,7 +159,7 @@ describe('workspace.readContext result schema', () => {
         focusedSurface: {
           kind: 'agent',
           title: 'Claude',
-          worktreeId: 'repo-1::/Users/private/orca',
+          worktreeId: 'pj_1',
           agentId: 'tab-agent-1'
         }
       }).success

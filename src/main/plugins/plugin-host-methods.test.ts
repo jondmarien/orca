@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
+import { PANEL_MESSAGE_MAX_BYTES } from '../../shared/plugins/plugin-panel-bridge'
+import { structuredCloneMessageBytes } from '../../shared/plugins/plugin-panel-message-budget'
 import { getLocalExecutionHostLabel } from '../../shared/execution-host'
 import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
 import { buildSidecarPlacement } from '../../shared/plugins/plugin-sidecar-contract'
@@ -11,6 +13,37 @@ import { executePluginHostCall, type PluginHostServices } from './plugin-host-me
 import { AgentSessionPtyWriteRefusedError } from '../../shared/agent-session-pty-write-admission'
 import { PluginKvStore } from './plugin-storage-store'
 import { PluginSidecarMailbox } from './plugin-sidecar-mailbox'
+
+function settingsBlobThatFitsOnlyWithoutOutcomeWrapper(): string {
+  const wrap = (blob: string): { inner: number; wrapped: number } => {
+    const value = { settings: { blob } }
+    return {
+      inner: structuredCloneMessageBytes(value),
+      wrapped: structuredCloneMessageBytes({ ok: true, value })
+    }
+  }
+  let low = 1
+  let high = PANEL_MESSAGE_MAX_BYTES
+  let found = ''
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2)
+    const blob = 'x'.repeat(mid)
+    const { inner, wrapped } = wrap(blob)
+    if (inner <= PANEL_MESSAGE_MAX_BYTES && wrapped > PANEL_MESSAGE_MAX_BYTES) {
+      found = blob
+      break
+    }
+    if (wrapped <= PANEL_MESSAGE_MAX_BYTES) {
+      low = mid + 1
+    } else {
+      high = mid - 1
+    }
+  }
+  if (!found) {
+    throw new Error('could not find a settings blob on the panel outcome boundary')
+  }
+  return found
+}
 
 const settingsRoots: string[] = []
 
@@ -526,6 +559,36 @@ describe('settings.get/set via panel', () => {
     })
     expect(new PluginKvStore(root, 'orca-samples.other', 'settings.json').getAll()).toEqual({
       secret: 'nope'
+    })
+  })
+
+  it('refuses a panel result that fits only when the outcome wrapper is ignored', async () => {
+    const blob = settingsBlobThatFitsOnlyWithoutOutcomeWrapper()
+    const services = createServices(vi.fn())
+    services.settings = {
+      getAll: () => ({ blob }),
+      set: vi.fn().mockReturnValue({ ok: true })
+    }
+
+    const outcome = await executePluginHostCall({
+      pluginId: 'orca-samples.demo',
+      method: 'settings.get',
+      params: {},
+      viaPanel: true,
+      grantedCapabilities: ['settings:own'],
+      services
+    })
+
+    expect(structuredCloneMessageBytes({ settings: { blob } })).toBeLessThanOrEqual(
+      PANEL_MESSAGE_MAX_BYTES
+    )
+    expect(structuredCloneMessageBytes({ ok: true, value: { settings: { blob } } })).toBeGreaterThan(
+      PANEL_MESSAGE_MAX_BYTES
+    )
+    expect(outcome).toEqual({
+      ok: false,
+      code: 'invalid_request',
+      error: 'panel message exceeds the size limit'
     })
   })
 

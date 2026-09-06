@@ -85,6 +85,34 @@ describe('PluginSidecarMailbox', () => {
     expect(keys).toHaveLength(PLUGIN_SIDECAR_MAILBOX_SLOT_LIMIT)
   })
 
+  it('evicts the first published frame when timestamps tie', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    const mailbox = new PluginSidecarMailbox()
+    mailbox.publish('orca-samples.zzz', {
+      channel: 'generic',
+      op: 'set',
+      payload: { n: 'first' }
+    })
+    for (let index = 1; index < PLUGIN_SIDECAR_MAILBOX_SLOT_LIMIT; index += 1) {
+      mailbox.publish(`orca-samples.p${index}`, {
+        channel: 'generic',
+        op: 'set',
+        payload: { n: index }
+      })
+    }
+    mailbox.publish('orca-samples.aaa', {
+      channel: 'generic',
+      op: 'set',
+      payload: { n: 'new' }
+    })
+
+    const keys = mailbox.latest().map((frame) => frame.pluginKey)
+    expect(keys).not.toContain('orca-samples.zzz')
+    expect(keys).toContain('orca-samples.aaa')
+    expect(keys).toHaveLength(PLUGIN_SIDECAR_MAILBOX_SLOT_LIMIT)
+  })
+
   it('exposes lastPublishedAt for the requesting plugin only', () => {
     vi.useFakeTimers()
     vi.setSystemTime(10)

@@ -74,7 +74,7 @@ Clients and remote Orca servers update independently, so mixed versions are the 
 
 ## Plugin UI focus
 
-Focused tab titles are identifying. Do not add focus fields or `ui.focus.changed` delivery without the `ui:focus` consent gate. Sample on the UI machine, project on the host, and keep titles basename/hostname + 80-byte truncated. See [`docs/reference/plugin-ui-focus.md`](./docs/reference/plugin-ui-focus.md).
+Focused tab titles are identifying. Do not add focus fields or `ui.focus.changed` delivery without the `ui:focus` consent gate. Sample on the UI machine, project on the host, keep titles basename/hostname + 80-byte truncated, and map path-bearing worktree ids to session-scoped opaque tokens before plugins see them. See [`docs/reference/plugin-ui-focus.md`](./docs/reference/plugin-ui-focus.md).
 
 ## Git Binary Compatibility
 

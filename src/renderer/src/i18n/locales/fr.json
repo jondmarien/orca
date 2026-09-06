@@ -10792,7 +10792,8 @@
             "secrets": "Stocker et lire des secrets dans le coffre chiffré propre au plugin",
             "eventsSubscribe": "Être notifié quand des worktrees sont créés ou supprimés et quand le statut d'un agent change",
             "settingsOwn": "Lire et modifier les paramètres propres au plugin",
-            "uiFocus": "Lire la surface d’interface active (type, titre d’onglet tronqué et clés de corrélation worktree/agent optionnelles). Désactivé tant que vous n’accordez pas cette permission."
+            "uiFocus": "Lire la surface d’interface active (type, titre d’onglet tronqué et clés de corrélation worktree/agent optionnelles). Désactivé tant que vous n’accordez pas cette permission.",
+            "sidecar": "Publier des trames sidecar (par exemple la présence Discord) afin qu’un client d’interface jumelé puisse les appliquer sur la machine qui a Discord"
           },
           "decisionFailed": "Impossible d'enregistrer la décision d'autorisation. Réessayez."
         },

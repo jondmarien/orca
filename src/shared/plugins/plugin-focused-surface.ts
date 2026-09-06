@@ -29,7 +29,7 @@ export const pluginFocusedSurfaceSchema = z
   .object({
     kind: pluginFocusedSurfaceKindSchema,
     title: z.string().max(PLUGIN_FOCUSED_SURFACE_TITLE_MAX_BYTES).nullable(),
-    /** Opaque join key matching worktree.* / agent.status.changed.worktreeId. */
+    /** Session-scoped opaque token. Path-bearing host ids are never forwarded. */
     worktreeId: pluginFocusJoinIdSchema.nullable().optional(),
     /** Focused agent-session tab id; join paneKey with `${agentId}:`. */
     agentId: pluginFocusJoinIdSchema.nullable().optional()
@@ -59,7 +59,32 @@ export const pluginUiFocusReportSchema = z
 
 export type PluginUiFocusReport = z.infer<typeof pluginUiFocusReportSchema>
 
-export function projectPluginFocusJoinId(raw: string | null | undefined): string | null {
+/** Host worktree ids are `${repoId}::${path}` and must not reach plugins as-is. */
+export function pluginJoinIdLooksPathBearing(value: string): boolean {
+  return /[\\/]/.test(value) || /::[A-Za-z]:/.test(value)
+}
+
+/** Process-local raw→token map so the same worktree keeps the same join key. */
+export class PluginOpaqueJoinKeyMap {
+  private readonly tokens = new Map<string, string>()
+  private next = 0
+
+  tokenFor(raw: string): string {
+    const existing = this.tokens.get(raw)
+    if (existing) {
+      return existing
+    }
+    this.next += 1
+    const token = `pj_${this.next.toString(36)}`
+    this.tokens.set(raw, token)
+    return token
+  }
+}
+
+export function projectPluginFocusJoinId(
+  raw: string | null | undefined,
+  joinKeys?: PluginOpaqueJoinKeyMap
+): string | null {
   if (raw == null) {
     return null
   }
@@ -67,7 +92,10 @@ export function projectPluginFocusJoinId(raw: string | null | undefined): string
   if (trimmed.length === 0 || trimmed.length > PLUGIN_FOCUSED_SURFACE_JOIN_ID_MAX_LENGTH) {
     return null
   }
-  return trimmed
+  if (!pluginJoinIdLooksPathBearing(trimmed)) {
+    return trimmed
+  }
+  return joinKeys?.tokenFor(trimmed) ?? null
 }
 
 export function projectPluginFocusedTitle(raw: string | null | undefined): string | null {
@@ -109,7 +137,10 @@ function hostnameFromHttpUrl(value: string): string | null {
   }
 }
 
-export function projectPluginUiFocusReport(raw: unknown): PluginFocusedSurface | null {
+export function projectPluginUiFocusReport(
+  raw: unknown,
+  joinKeys?: PluginOpaqueJoinKeyMap
+): PluginFocusedSurface | null {
   const parsed = pluginUiFocusReportSchema.safeParse(raw)
   if (!parsed.success || parsed.data.windowFocused === false || parsed.data.kind === undefined) {
     return null
@@ -118,12 +149,12 @@ export function projectPluginUiFocusReport(raw: unknown): PluginFocusedSurface |
     kind: parsed.data.kind,
     title: projectPluginFocusedTitle(parsed.data.title)
   }
-  const worktreeId = projectPluginFocusJoinId(parsed.data.worktreeId)
+  const worktreeId = projectPluginFocusJoinId(parsed.data.worktreeId, joinKeys)
   if (worktreeId) {
     surface.worktreeId = worktreeId
   }
   if (parsed.data.kind === 'agent') {
-    surface.agentId = projectPluginFocusJoinId(parsed.data.agentId)
+    surface.agentId = projectPluginFocusJoinId(parsed.data.agentId, joinKeys)
   }
   return surface
 }

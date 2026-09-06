@@ -107,15 +107,16 @@ export async function executePluginHostCall(
         error: `internal: malformed ${input.method} result`
       }
     }
+    const outcome = { ok: true as const, value: validated.data }
     if (input.viaPanel) {
-      const oversizedResult = admitPluginPanelResult(validated.data)
+      const oversizedResult = admitPluginPanelResult(outcome)
       if (oversizedResult) {
         await auditMutation('error').catch(() => undefined)
         return oversizedResult
       }
     }
     await auditMutation('ok').catch(() => undefined)
-    return { ok: true, value: validated.data }
+    return outcome
   } catch (error) {
     await auditMutation('error').catch(() => undefined)
     return {

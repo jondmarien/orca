@@ -49,6 +49,60 @@ describe('decoratePluginWorkspaceReadContext', () => {
     })
   })
 
+  it('projects a missing host or agent field when the other is already set', async () => {
+    const hostOnly = decoratePluginWorkspaceReadContext(
+      delegate({
+        worktreeId: 'wt-1',
+        path: '/secret/repo',
+        branch: 'main',
+        displayName: 'Repo',
+        hostId: 'ssh:build-box',
+        createdWithAgent: 'codex',
+        executionHost: { kind: 'ssh', label: 'Build box' }
+      }),
+      {
+        hostLabelSources: () => ({
+          hostLabelById: new Map([['ssh:build-box', 'Should not replace']])
+        }),
+        listAgentStatuses: () => [
+          {
+            worktreeId: 'wt-1',
+            state: 'working',
+            agentType: 'claude',
+            model: 'opus-4',
+            receivedAt: 2
+          }
+        ],
+        getProfileLabel: () => 'Personal'
+      }
+    )
+    await expect(hostOnly.resolveActiveWorktreeContext()).resolves.toMatchObject({
+      executionHost: { kind: 'ssh', label: 'Build box' },
+      agent: { type: 'claude', model: 'opus-4', profile: 'Personal' }
+    })
+
+    const agentOnly = decoratePluginWorkspaceReadContext(
+      delegate({
+        worktreeId: 'wt-1',
+        path: '/secret/repo',
+        branch: 'main',
+        displayName: 'Repo',
+        hostId: 'ssh:build-box',
+        agent: { type: 'codex', model: null, profile: null }
+      }),
+      {
+        hostLabelSources: () => ({
+          hostLabelById: new Map([['ssh:build-box', 'Build box']])
+        }),
+        getProfileLabel: () => 'Should not replace'
+      }
+    )
+    await expect(agentOnly.resolveActiveWorktreeContext()).resolves.toMatchObject({
+      executionHost: { kind: 'ssh', label: 'Build box' },
+      agent: { type: 'codex', model: null, profile: null }
+    })
+  })
+
   it('leaves an already-projected context unchanged', async () => {
     const existing = {
       worktreeId: 'wt-1',

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   PLUGIN_FOCUSED_SURFACE_TITLE_MAX_BYTES,
+  PluginOpaqueJoinKeyMap,
   pluginFocusedSurfaceSchema,
+  pluginJoinIdLooksPathBearing,
   pluginUiFocusChangedPayloadSchema,
+  projectPluginFocusJoinId,
   projectPluginFocusedTitle,
   projectPluginUiFocusReport,
   pluginFocusedSurfacesEqual
@@ -52,7 +55,7 @@ describe('projectPluginUiFocusReport', () => {
     ).toEqual({ kind: 'editor', title: 'file.ts' })
   })
 
-  it('keeps worktreeId as an opaque join key and does not basename it', () => {
+  it('omits path-bearing worktree ids when no session map is provided', () => {
     expect(
       projectPluginUiFocusReport({
         windowFocused: true,
@@ -62,9 +65,30 @@ describe('projectPluginUiFocusReport', () => {
       })
     ).toEqual({
       kind: 'terminal',
+      title: 'zsh'
+    })
+  })
+
+  it('maps path-bearing worktree ids to a stable session token', () => {
+    const joinKeys = new PluginOpaqueJoinKeyMap()
+    const report = {
+      windowFocused: true as const,
+      kind: 'terminal' as const,
       title: 'zsh',
       worktreeId: 'repo-1::/Users/private/orca'
-    })
+    }
+    const first = projectPluginUiFocusReport(report, joinKeys)
+    const second = projectPluginUiFocusReport(report, joinKeys)
+    expect(first?.worktreeId).toMatch(/^pj_[a-z0-9]+$/)
+    expect(first?.worktreeId).toBe(second?.worktreeId)
+    expect(first?.worktreeId).not.toContain('/')
+    expect(first?.worktreeId).not.toContain('::')
+    expect(
+      projectPluginUiFocusReport(
+        { ...report, worktreeId: 'repo-2::/Users/private/other' },
+        joinKeys
+      )?.worktreeId
+    ).not.toBe(first?.worktreeId)
   })
 
   it('includes agentId only for agent surfaces', () => {
@@ -118,10 +142,30 @@ describe('plugin focus schemas', () => {
       pluginFocusedSurfaceSchema.safeParse({
         kind: 'agent',
         title: 'Claude',
-        worktreeId: 'repo-1::/Users/private/orca',
+        worktreeId: 'pj_1',
         agentId: 'tab-agent-1'
       }).success
     ).toBe(true)
+  })
+})
+
+describe('pluginJoinIdLooksPathBearing', () => {
+  it('detects repoId::path and slash-bearing ids', () => {
+    expect(pluginJoinIdLooksPathBearing('repo-1::/Users/private/orca')).toBe(true)
+    expect(pluginJoinIdLooksPathBearing('repo-1::C:\\Users\\private\\orca')).toBe(true)
+    expect(pluginJoinIdLooksPathBearing('/Users/private/repo')).toBe(true)
+    expect(pluginJoinIdLooksPathBearing('wt-1')).toBe(false)
+    expect(pluginJoinIdLooksPathBearing('tab-agent-1')).toBe(false)
+  })
+})
+
+describe('projectPluginFocusJoinId', () => {
+  it('passes through non-path ids and tokenizes path-bearing ids only with a map', () => {
+    expect(projectPluginFocusJoinId('wt-1')).toBe('wt-1')
+    expect(projectPluginFocusJoinId('repo-1::/Users/private/orca')).toBeNull()
+    const joinKeys = new PluginOpaqueJoinKeyMap()
+    expect(projectPluginFocusJoinId('repo-1::/Users/private/orca', joinKeys)).toBe('pj_1')
+    expect(projectPluginFocusJoinId('repo-1::/Users/private/orca', joinKeys)).toBe('pj_1')
   })
 })
 

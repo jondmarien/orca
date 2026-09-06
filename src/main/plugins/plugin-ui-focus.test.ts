@@ -26,6 +26,27 @@ describe('PluginUiFocusSnapshot', () => {
     ).toBe(false)
   })
 
+  it('maps a path-bearing worktree id to a stable opaque token', () => {
+    const snapshot = new PluginUiFocusSnapshot()
+    const first = snapshot.apply({
+      windowFocused: true,
+      kind: 'terminal',
+      title: 'zsh',
+      worktreeId: 'repo-1::/Users/private/orca'
+    })
+    expect(first.surface?.worktreeId).toMatch(/^pj_[a-z0-9]+$/)
+    expect(first.surface?.worktreeId).not.toContain('/')
+    expect(
+      snapshot.apply({
+        windowFocused: true,
+        kind: 'terminal',
+        title: 'zsh',
+        worktreeId: 'repo-1::/Users/private/orca'
+      }).changed
+    ).toBe(false)
+    expect(snapshot.get()?.worktreeId).toBe(first.surface?.worktreeId)
+  })
+
   it('clears on window blur and sanitizes titles', () => {
     const snapshot = new PluginUiFocusSnapshot()
     snapshot.apply({
